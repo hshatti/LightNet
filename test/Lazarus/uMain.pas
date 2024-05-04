@@ -365,7 +365,7 @@ initialization
   for i:=0 to ocl.DeviceCount-1 do
     writeln(ifthen(i=ocl.ActiveDeviceId,' *','  '),ocl.DeviceName(i),', ', ocl.CLDeviceDriver,' : ', ocl.CLDeviceVersion, ' Units :', ocl.ProcessorsCount,' @ ',ocl.ProcessorsFrequency,'Mhz ');
   writeln('');
-  ocl.LoadFromFile(GetCurrentDir+'\cl_sgemm.c');
+  ocl.LoadFromFile(GetCurrentDir+'\source\cl_sgemm.c');
   writeln('Build :',ocl.Build);
   writeln(ocl.BuildLog, sLineBreak, sLineBreak, 'Kernels :', sLineBreak);
 

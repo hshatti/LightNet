@@ -114,6 +114,7 @@
         <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
         <SanitizedProjectName>LightNetDelphi</SanitizedProjectName>
         <DCC_UnitSearchPath>../../source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_ConsoleTarget>true</DCC_ConsoleTarget>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Android)'!=''">
         <DCC_UsePackage>soapserver;IndySystem;fmx;DbxCommonDriver;bindengine;IndyIPCommon;FireDACCommonDriver;IndyProtocols;Skia.Package.RTL;IndyIPClient;dbxcds;bindcomp;FmxTeeUI;FireDACCommon;IndyCore;RESTBackendComponents;bindcompfmx;bindcompdbx;rtl;FireDACSqliteDriver;DbxClientDriver;RESTComponents;DBXSqliteDriver;IndyIPServer;fmxFireDAC;dbexpress;dsnapxml;soapmidas;Python;P4DPyPackage;inet;P4DEnvironmentProject;FireDAC;fmxase;xmlrtl;tethering;P4DEnvironment;dbrtl;dsnap;Skia.Package.FMX;CloudService;CustomIPTransport;FMXTee;PythonFmx;soaprtl;DBXInterBaseDriver;FireDACIBDriver;$(DCC_UsePackage)</DCC_UsePackage>

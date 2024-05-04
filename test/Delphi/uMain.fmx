@@ -1,13 +1,16 @@
 object Form1: TForm1
-  Left = 0
-  Top = 0
+  Left = 180
+  Top = 60
   Caption = 'Form1'
-  ClientHeight = 816
-  ClientWidth = 1080
+  ClientHeight = 910
+  ClientWidth = 1101
+  Position = Designed
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]
   OnCreate = FormCreate
+  Left = 180
+  Top = 60
   DesignerMasterStyle = 0
   object Button1: TButton
     Position.X = 16.000000000000000000
@@ -23,24 +26,23 @@ object Form1: TForm1
     Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
     DataDetectorTypes = []
     Align = Bottom
-    Position.Y = 585.000000000000000000
-    Size.Width = 1080.000000000000000000
-    Size.Height = 231.000000000000000000
+    Position.Y = 810.000000000000000000
+    Size.Width = 1101.000000000000000000
+    Size.Height = 100.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
-    Viewport.Width = 1076.000000000000000000
-    Viewport.Height = 227.000000000000000000
+    Viewport.Width = 1097.000000000000000000
+    Viewport.Height = 96.000000000000000000
   end
   object Image1: TImage
     MultiResBitmap = <
       item
       end>
     Align = Right
-    Position.X = 132.000000000000000000
-    Size.Width = 948.000000000000000000
-    Size.Height = 585.000000000000000000
+    Position.X = 136.000000000000000000
+    Size.Width = 965.000000000000000000
+    Size.Height = 805.000000000000000000
     Size.PlatformDefault = False
-    WrapMode = Stretch
   end
   object Button3: TButton
     Position.X = 16.000000000000000000
@@ -51,5 +53,14 @@ object Form1: TForm1
     TabOrder = 4
     Text = 'Test OpenCL'
     OnClick = Button3Click
+  end
+  object Splitter1: TSplitter
+    Align = Bottom
+    Cursor = crVSplit
+    MinSize = 20.000000000000000000
+    Position.Y = 805.000000000000000000
+    Size.Width = 1101.000000000000000000
+    Size.Height = 5.000000000000000000
+    Size.PlatformDefault = False
   end
 end

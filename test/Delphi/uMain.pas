@@ -20,6 +20,7 @@ type
     Memo1: TMemo;
     Image1: TImage;
     Button3: TButton;
+    Splitter1: TSplitter;
     procedure Button1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure Button3Click(Sender: TObject);
@@ -313,7 +314,7 @@ initialization
   for i:=0 to ocl.DeviceCount-1 do
     writeln('  ',ocl.DeviceName(i));
   writeln('');
-  ocl.LoadFromFile(GetCurrentDir+'\cl_sgemm.c');
+  ocl.LoadFromFile(GetCurrentDir+'\source\cl_sgemm.c');
   writeln('Build :',ocl.Build);
   writeln(ocl.BuildLog);
 

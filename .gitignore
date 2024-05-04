@@ -9,7 +9,6 @@ lib/
 *.dll
 *.cmake
 *.h
-*.c
 *.trc
 *.dbg
 *.so
@@ -18,6 +17,7 @@ lib/
 *.xml
 *.lps
 darknetTest
+build.bat
 
 # Delphi
 backup/
