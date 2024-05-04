@@ -1237,7 +1237,7 @@ begin
   end;
 end;
 
-var hLib : {$ifdef FPC}pointer {$else}THandle{$endif};
+var hLib : {$ifdef MSWINDOWS}THandle {$else}Pointer{$endif};
 
 initialization
   {$if defined(MSWINDOWS)}
@@ -1248,13 +1248,9 @@ initialization
 
   {$endif}
 
-  {$ifdef fpc}
-  if Assigned(hLib) then
-  {$else}
-  if hLib<>0 then
-  {$endif}
-   begin
   {$ifdef MSWINDOWS}
+  if hLib<>0 then
+    begin
       clGetPlatformIDs             := getProcAddress(hLib, 'clGetPlatformIDs');
       clGetPlatformInfo            := getProcAddress(hLib, 'clGetPlatformInfo');
       clGetDeviceIDs               := getProcAddress(hLib, 'clGetDeviceIDs');
@@ -1321,7 +1317,9 @@ initialization
       clEnqueueMarker              := getProcAddress(hLib, 'clEnqueueMarker');
       clEnqueueWaitForEvents       := getProcAddress(hLib, 'clEnqueueWaitForEvents');
       clEnqueueBarrier             := getProcAddress(hLib, 'clEnqueueBarrier');
+    end
   {$else}
+    if hLib<>0 then begin
       clGetPlatformIDs             := dlsym(hLib, 'clGetPlatformIDs');
       clGetPlatformInfo            := dlsym(hLib, 'clGetPlatformInfo');
       clGetDeviceIDs               := dlsym(hLib, 'clGetDeviceIDs');
@@ -1388,21 +1386,16 @@ initialization
       clEnqueueMarker              := dlsym(hLib, 'clEnqueueMarker');
       clEnqueueWaitForEvents       := dlsym(hLib, 'clEnqueueWaitForEvents');
       clEnqueueBarrier             := dlsym(hLib, 'clEnqueueBarrier');
-  {$endif}
     end
+  {$endif}
     else raise Exception.Create('OpenCL Library not found!');
 
 finalization
-    {$ifdef fpc}
-    if assigned(hLib) then
-    {$else}
-    if hLib<>0 then
-    {$endif}
-      {$if defined(MSWINDOWS)}
-      FreeLibrary(hLib);
-      {$elseif defined(UNIX) or defined(POSIX)}
-      dlclose(hLib);
 
-      {$endif}
+    {$if defined(MSWINDOWS)}
+    if hLib<>0 then FreeLibrary(hLib);
+    {$elseif defined(UNIX) or defined(POSIX)}
+    if Assigned(hLib) then dlclose(hLib);
+    {$endif}
 
 end.

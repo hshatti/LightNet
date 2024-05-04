@@ -11,8 +11,10 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls, math, StrUtils,
-  Darknet, cfg, gemm, ShortcutLayer, box, convlstmlayer, DeConvolutionalLayer,GruLayer, locallayer, MaxpoolLayer,nnetwork, blas, data, image, parser, steroids, YoloLayer{$ifdef MSWINDOWS}, opencv{$endif}
-  , OpenCLHelper;
+  Darknet, nnetwork, parser, cfg, data, image, box, steroids, OpenCLHelper
+  {$ifdef MSWINDOWS}
+  , opencv
+  {$endif};
 
 type
 
@@ -28,8 +30,9 @@ type
     Memo1: TMemo;
     Panel1: TPanel;
     Panel2: TPanel;
+    Splitter1: TSplitter;
+    Splitter2: TSplitter;
     procedure Button1Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
     procedure CheckBox1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -158,6 +161,10 @@ end;
 const filenames: TArray<string> = ['kite','dog','horses','person'];
 procedure TForm1.Button1Click(Sender: TObject);
 begin
+  if isDetecting then
+      button1.Caption:='Start Detecting Objects'
+  else
+      button1.Caption:='Stop';
   test_detector('cfg/coco.data','cfg/yolov7.cfg','yolov7.weights',filenames,thresh,hier_thresh,'',0);
 end;
 
@@ -188,19 +195,20 @@ TPixel=record
 end;
 
 var
-  {$ifdef MSIWNDOWS}
+  {$ifdef MSWINDOWS}
   cap:PCvCapture;
   im,im2:PIplImage;
   {$endif}
-  isCapturing:boolean;
 
-procedure TForm1.Button2Click(Sender: TObject);
-var d:double;
+
+procedure TForm1.CheckBox1Change(Sender: TObject);
+
+  var d:double;
   i:longint;
   bmp:Graphics.TBitmap;
 begin
   {$ifdef MSWINDOWS}
-  if not isCapturing then exit;
+  if not CheckBox1.Checked then exit;
   cap:=nil;
   im:=nil;
   bmp:=nil;
@@ -220,7 +228,7 @@ begin
           bmp.setSize(im.width,im.height);
       end;
   writeln(im.depth,':',im.imageSize,':',im.channelSeq,':',im.nChannels,' x ', im.height,' x ',im.width);
-  while isCapturing and not Application.Terminated do begin
+  while CheckBox1.Checked and not Application.Terminated do begin
     im:=cvQueryFrame(cap);
     bmp.BeginUpdate();
     for i:=0 to im.height-1 do
@@ -232,13 +240,6 @@ begin
   bmp.free;
   cvReleaseCapture(@cap);
   {$endif}
-end;
-
-procedure TForm1.CheckBox1Change(Sender: TObject);
-begin
-  isCapturing:=CheckBox1.Checked;
-  Button2.Click;
-
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);

@@ -15,6 +15,7 @@ lib/
 *.a
 *.exe
 *.xml
+*.lps
 darknetTest
 
 # Delphi

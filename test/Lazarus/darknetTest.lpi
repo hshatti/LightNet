@@ -94,7 +94,6 @@
         <ComponentName Value="Form1"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="uMain"/>
       </Unit>
       <Unit>
         <Filename Value="activationlayer.pas"/>
@@ -352,10 +351,12 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="darknetTest"/>
+      <Filename Value="../../darknetTest"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
+      <Libraries Value="..\.."/>
+      <OtherUnitFiles Value="..\..\source"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>
@@ -394,16 +395,6 @@
 -CfAVX2
 -dUSE_TELEMETRY
 -dUSE_MULTITHREADING"/>
-      <OtherDefines Count="8">
-        <Define0 Value="OPENBLAS_USE64BITINT"/>
-        <Define1 Value="OPENBLAS"/>
-        <Define2 Value="MKL"/>
-        <Define3 Value="CLBLAST"/>
-        <Define4 Value="CLBLAS"/>
-        <Define5 Value="DEBUG"/>
-        <Define6 Value="USE_MULTITHREADING"/>
-        <Define7 Value="USE_TELEMETRY"/>
-      </OtherDefines>
     </Other>
   </CompilerOptions>
   <Debugging>
