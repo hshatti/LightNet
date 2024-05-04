@@ -1,0 +1,70 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 816
+  ClientWidth = 1080
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnShow = FormShow
+  DesignerMasterStyle = 0
+  object Button1: TButton
+    Position.X = 20.000000000000000000
+    Position.Y = 56.000000000000000000
+    TabOrder = 1
+    Text = 'Button1'
+    OnClick = Button1Click
+  end
+  object Button2: TButton
+    Position.X = 20.000000000000000000
+    Position.Y = 96.000000000000000000
+    TabOrder = 0
+    Text = 'Button1'
+    OnClick = Button2Click
+  end
+  object CheckBox1: TCheckBox
+    Position.X = 28.000000000000000000
+    Position.Y = 20.000000000000000000
+    TabOrder = 2
+    Text = 'CheckBox1'
+    OnChange = CheckBox1Change
+  end
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Align = Bottom
+    Position.Y = 585.000000000000000000
+    Size.Width = 1080.000000000000000000
+    Size.Height = 231.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Viewport.Width = 1076.000000000000000000
+    Viewport.Height = 227.000000000000000000
+  end
+  object Image1: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Align = Right
+    Position.X = 216.000000000000000000
+    Size.Width = 864.000000000000000000
+    Size.Height = 585.000000000000000000
+    Size.PlatformDefault = False
+    WrapMode = Stretch
+  end
+  object Button3: TButton
+    Position.X = 20.000000000000000000
+    Position.Y = 140.000000000000000000
+    TabOrder = 6
+    Text = 'Mandelbrot'
+    OnClick = Button3Click
+  end
+  object Button4: TButton
+    Position.X = 20.000000000000000000
+    Position.Y = 180.000000000000000000
+    TabOrder = 8
+    Text = 'sxpay'
+  end
+end

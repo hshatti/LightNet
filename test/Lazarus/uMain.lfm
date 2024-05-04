@@ -1,0 +1,86 @@
+object Form1: TForm1
+  Left = 36
+  Height = 766
+  Top = 36
+  Width = 1202
+  Caption = 'Form1'
+  ClientHeight = 766
+  ClientWidth = 1202
+  OnCreate = FormCreate
+  LCLVersion = '2.2.0.4'
+  object Memo1: TMemo
+    Left = 0
+    Height = 716
+    Top = 50
+    Width = 559
+    Align = alLeft
+    Anchors = []
+    ScrollBars = ssAutoBoth
+    TabOrder = 0
+  end
+  object Panel1: TPanel
+    Left = 559
+    Height = 716
+    Top = 50
+    Width = 643
+    Align = alClient
+    ClientHeight = 716
+    ClientWidth = 643
+    TabOrder = 1
+    object Image1: TImage
+      Left = 1
+      Height = 714
+      Top = 1
+      Width = 641
+      Align = alClient
+      Proportional = True
+      Stretch = True
+    end
+  end
+  object Panel2: TPanel
+    Left = 0
+    Height = 50
+    Top = 0
+    Width = 1202
+    Align = alTop
+    ClientHeight = 50
+    ClientWidth = 1202
+    TabOrder = 2
+    object Button1: TButton
+      Left = 32
+      Height = 25
+      Top = 12
+      Width = 75
+      Caption = 'Button1'
+      OnClick = Button1Click
+      TabOrder = 0
+    end
+    object Button2: TButton
+      Left = 124
+      Height = 25
+      Top = 12
+      Width = 75
+      Caption = 'Button2'
+      OnClick = Button2Click
+      TabOrder = 1
+    end
+    object CheckBox1: TCheckBox
+      Left = 320
+      Height = 21
+      Top = 16
+      Width = 74
+      Caption = 'Capture'
+      OnChange = CheckBox1Change
+      TabOrder = 2
+    end
+    object Button3: TButton
+      Left = 216
+      Height = 25
+      Top = 12
+      Width = 75
+      Caption = 'Mandelbrot'
+      OnClick = Button3Click
+      TabOrder = 3
+    end
+  end
+end

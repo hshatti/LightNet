@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="12"/>
+    <PathDelim Value="\"/>
+    <General>
+      <SessionStorage Value="InProjectDir"/>
+      <Title Value="darknetTest"/>
+      <Scaled Value="True"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
+      <XPManifest>
+        <DpiAware Value="True"/>
+      </XPManifest>
+      <Icon Value="0"/>
+    </General>
+    <BuildModes>
+      <Item Name="Debug" Default="True"/>
+      <Item Name="Release">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="darknetTest"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Parsing>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <DebugInfoType Value="dsDwarf3"/>
+              <StripSymbols Value="True"/>
+              <UseExternalDbgSyms Value="True"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
+          </Linking>
+          <Other>
+            <CustomOptions Value="-OpCOREAVX2
+-OoFASTMATH
+-CpCOREAVX2
+-dUSE_MULTITHREADING
+-dUSE_TELEMETRY"/>
+            <OtherDefines Count="8">
+              <Define0 Value="OPENBLAS_USE64BITINT"/>
+              <Define1 Value="OPENBLAS"/>
+              <Define2 Value="MKL"/>
+              <Define3 Value="CLBLAST"/>
+              <Define4 Value="CLBLAS"/>
+              <Define5 Value="DEBUG"/>
+              <Define6 Value="USE_MULTITHREADING"/>
+              <Define7 Value="USE_TELEMETRY"/>
+            </OtherDefines>
+          </Other>
+        </CompilerOptions>
+      </Item>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+    <RunParams>
+      <FormatVersion Value="2"/>
+    </RunParams>
+    <RequiredPackages>
+      <Item>
+        <PackageName Value="LCL"/>
+      </Item>
+    </RequiredPackages>
+    <Units>
+      <Unit>
+        <Filename Value="darknetTest.lpr"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="uMain.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="uMain"/>
+      </Unit>
+      <Unit>
+        <Filename Value="activationlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ActivationLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="utils.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="blas.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="activations.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Activations"/>
+      </Unit>
+      <Unit>
+        <Filename Value="gemm.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="avgpoollayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="AvgPoolLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="batchnormlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="BatchNormLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="box.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="col2im.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="compare.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="parser.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="image.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="nnetwork.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="data.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="matrix.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="connectedlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ConnectedLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="convolutionallayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ConvolutionalLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="costlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CostLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="crnnlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CRNNLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="croplayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CropLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="cuda.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="deconvolutionallayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DeConvolutionalLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="detectionlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DetectionLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="softmaxlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SoftmaxLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="dropoutlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DropoutLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="grulayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="GruLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="iseglayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="iSegLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="l2normlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="L2NormLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="list.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="locallayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LocalLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="logisticlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LogisticLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="lstmlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LSTMLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="maxpoollayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MaxpoolLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="yololayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="YoloLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="normalizationlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="NormalizationLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="optionlist.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="OptionList"/>
+      </Unit>
+      <Unit>
+        <Filename Value="rnnlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="RNNLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="tree.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="regionlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="RegionLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="reorglayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ReOrgLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="shortcutlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ShortcutLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="upsamplelayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UpSampleLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="routelayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="RouteLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="convlstmlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ConvLSTMLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="scalechannellayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ScaleChannelLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="samlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SAMLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="reorgoldlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ReOrgOldLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="representationlayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="RepresentationLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="gaussianyololayer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form2"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="GaussianYoloLayer"/>
+      </Unit>
+      <Unit>
+        <Filename Value="cfg.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="darknet.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="cl_sgemm.c"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="cl.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <PathDelim Value="\"/>
+    <Target>
+      <Filename Value="darknetTest"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Parsing>
+      <SyntaxOptions>
+        <SyntaxMode Value="Delphi"/>
+        <IncludeAssertionCode Value="True"/>
+      </SyntaxOptions>
+    </Parsing>
+    <CodeGeneration>
+      <Checks>
+        <IOChecks Value="True"/>
+        <RangeChecks Value="True"/>
+        <OverflowChecks Value="True"/>
+        <StackChecks Value="True"/>
+      </Checks>
+      <VerifyObjMethodCallValidity Value="True"/>
+    </CodeGeneration>
+    <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf3"/>
+        <UseHeaptrc Value="True"/>
+        <TrashVariables Value="True"/>
+        <UseExternalDbgSyms Value="True"/>
+      </Debugging>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
+    </Linking>
+    <Other>
+      <WriteFPCLogo Value="False"/>
+      <CustomOptions Value="-OoFASTMATH
+-OpCOREAVX2
+-CpCOREAVX2
+-CfAVX2
+-dUSE_TELEMETRY
+-dUSE_MULTITHREADING"/>
+      <OtherDefines Count="8">
+        <Define0 Value="OPENBLAS_USE64BITINT"/>
+        <Define1 Value="OPENBLAS"/>
+        <Define2 Value="MKL"/>
+        <Define3 Value="CLBLAST"/>
+        <Define4 Value="CLBLAS"/>
+        <Define5 Value="DEBUG"/>
+        <Define6 Value="USE_MULTITHREADING"/>
+        <Define7 Value="USE_TELEMETRY"/>
+      </OtherDefines>
+    </Other>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions>
+      <Item>
+        <Name Value="EAbort"/>
+      </Item>
+      <Item>
+        <Name Value="ECodetoolError"/>
+      </Item>
+      <Item>
+        <Name Value="EFOpenError"/>
+      </Item>
+    </Exceptions>
+  </Debugging>
+</CONFIG>

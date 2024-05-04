@@ -1,0 +1,25 @@
+﻿
+# FPC  
+lib/
+*lib/
+*.bak
+*.o
+*.lib
+*.dll
+*.cmake
+*.h
+*.c
+*.trc
+*.dbg
+*.so
+*.a
+*.exe
+*.xml
+darknetTest
+
+# Delphi
+backup/
+LightNetDelphi/
+*.bak/
+*.classes/
+__*/
