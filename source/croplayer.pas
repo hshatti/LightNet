@@ -12,7 +12,7 @@ unit CropLayer;
 interface
 
 uses
-  SysUtils, darknet, image;
+  SysUtils, lightnet, image;
 
 type
     TCropLayer = TLayer;

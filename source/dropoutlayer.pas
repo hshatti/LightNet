@@ -12,7 +12,7 @@ unit DropoutLayer;
 interface
 
 uses
-  SysUtils, darknet, blas;
+  SysUtils, lightnet, blas;
 
 type
   PDropoutLayer = ^TDropoutLayer;

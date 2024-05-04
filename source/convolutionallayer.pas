@@ -15,7 +15,7 @@ unit ConvolutionalLayer;
 interface
 
 uses
-  SysUtils, math, darknet, blas, col2im, gemm, box, image, Activations, BatchNormLayer {$ifdef AI2}, XNORLayer{$endif};
+  SysUtils, math, lightnet, blas, col2im, gemm, box, image, Activations, BatchNormLayer {$ifdef AI2}, XNORLayer{$endif};
 
 Type
    PConvolutionalLayer = ^TConvolutionalLayer ;

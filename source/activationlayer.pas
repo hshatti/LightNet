@@ -12,7 +12,7 @@ unit ActivationLayer;
 interface
 
 uses
-   darknet, Activations, Blas;
+   lightnet, Activations, Blas;
 
 type
   TActivationLayer=TLayer;

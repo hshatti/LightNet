@@ -7,6 +7,7 @@ object Form1: TForm1
   ClientHeight = 783
   ClientWidth = 1062
   OnCreate = FormCreate
+  LCLVersion = '3.2.0.0'
   object Memo1: TMemo
     Left = 0
     Height = 66

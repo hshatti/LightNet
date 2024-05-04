@@ -5,7 +5,7 @@
     <PathDelim Value="\"/>
     <General>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="darknetTest"/>
+      <Title Value="lightnetTest"/>
       <Scaled Value="True"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
@@ -21,10 +21,12 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="darknetTest"/>
+            <Filename Value="../../lightnetTest"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
+            <Libraries Value="..\.."/>
+            <OtherUnitFiles Value="..\..\source"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -52,11 +54,12 @@
             </Options>
           </Linking>
           <Other>
-            <CustomOptions Value="-OpCOREAVX2
--OoFASTMATH
+            <CustomOptions Value="-OoFASTMATH
+-OpCOREAVX2
 -CpCOREAVX2
--dUSE_MULTITHREADING
--dUSE_TELEMETRY"/>
+-CfAVX2
+-dUSE_TELEMETRY
+-dUSE_MULTITHREADING"/>
             <OtherDefines Count="8">
               <Define0 Value="OPENBLAS_USE64BITINT"/>
               <Define1 Value="OPENBLAS"/>
@@ -85,8 +88,9 @@
     </RequiredPackages>
     <Units>
       <Unit>
-        <Filename Value="darknetTest.lpr"/>
+        <Filename Value="lightnetTest.lpr"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="darknetTest"/>
       </Unit>
       <Unit>
         <Filename Value="uMain.pas"/>
@@ -334,7 +338,7 @@
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
-        <Filename Value="darknet.pas"/>
+        <Filename Value="lightnet.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
@@ -351,7 +355,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="../../darknetTest"/>
+      <Filename Value="../../lightnetTest"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>

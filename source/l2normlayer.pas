@@ -11,7 +11,7 @@ unit L2NormLayer;
 interface
 
 uses
-  SysUtils, darknet, blas;
+  SysUtils, lightnet, blas;
 
 type
   TL2Norm = TLayer;

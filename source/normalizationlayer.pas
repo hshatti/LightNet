@@ -12,7 +12,7 @@ unit NormalizationLayer;
 interface
 
 uses
-  SysUtils, darknet, blas;
+  SysUtils, lightnet, blas;
 
 type
 

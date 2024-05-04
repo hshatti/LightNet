@@ -12,7 +12,7 @@ unit CRNNLayer;
 interface
 
 uses
-  SysUtils, darknet, blas, ConvolutionalLayer;
+  SysUtils, lightnet, blas, ConvolutionalLayer;
 
 type TCRNNLayer = TLayer;
 

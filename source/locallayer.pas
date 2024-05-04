@@ -12,7 +12,7 @@ unit LocalLayer;
 interface
 
 uses
-  SysUtils, darknet, blas, col2im, Activations, gemm;
+  SysUtils, lightnet, blas, col2im, Activations, gemm;
 
 type
   TLocalLayer = TLayer;

@@ -11,7 +11,7 @@ unit list;
 interface
 
 uses
-  SysUtils, darknet;
+  SysUtils, lightnet;
 
 type
   PList = ^TList;

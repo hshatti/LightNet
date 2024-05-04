@@ -12,7 +12,7 @@ unit GruLayer;
 interface
 
 uses
-  SysUtils, darknet, Activations, ConnectedLayer, blas;
+  SysUtils, lightnet, Activations, ConnectedLayer, blas;
 
 type
   TGRULayer = TLayer;

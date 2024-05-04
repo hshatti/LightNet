@@ -12,7 +12,7 @@ unit nnetwork;
 
 interface
 uses
-  Classes, SysUtils, darknet, data, matrix, image, blas
+  Classes, SysUtils, lightnet, data, matrix, image, blas
   , AvgPoolLayer
   , BatchNormLayer
   , ConnectedLayer

@@ -19,7 +19,7 @@ unit blas;
 interface
 
 uses
-  math, sysutils, darknet;
+  math, sysutils, lightnet;
 
 const _EPSILON = 0.000001;
       TWO_PI =6.2831853071795864769252866;

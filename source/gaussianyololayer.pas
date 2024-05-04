@@ -12,7 +12,7 @@ unit GaussianYoloLayer;
 interface
 
 uses
-  SysUtils, Darknet, blas, Activations;
+  SysUtils, lightnet, blas, Activations;
 
 type
   TGaussianYoloLayer = TLayer;

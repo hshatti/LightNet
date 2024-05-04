@@ -12,7 +12,7 @@ unit LogisticLayer;
 interface
 
 uses
-  SysUtils, darknet, blas, Activations;
+  SysUtils, lightnet, blas, Activations;
 
 type
   TLogisticLayer = TLayer;

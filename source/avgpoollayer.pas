@@ -9,7 +9,7 @@ unit AvgPoolLayer;
 {$pointermath on}
 
 interface
-uses SysUtils, darknet;
+uses SysUtils, lightnet;
 
 type
     PAvgPoolLayer = ^TAvgPoolLayer;

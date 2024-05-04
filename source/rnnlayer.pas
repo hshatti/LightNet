@@ -12,7 +12,7 @@ unit RNNLayer;
 interface
 
 uses
-  SysUtils, darknet, ConnectedLayer, blas;
+  SysUtils, lightnet, ConnectedLayer, blas;
 
 type
   PRNNLayer = ^TRNNLayer;

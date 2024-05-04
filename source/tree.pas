@@ -12,7 +12,7 @@ unit tree;
 interface
 
 uses
-  SysUtils, darknet, utils;
+  SysUtils, lightnet, utils;
 
 procedure change_leaves(const t: PTree; const leaf_list: string);
 function get_hierarchy_probability(const x: TSingles; const hier: TTree; c: longint; const stride: longint=1):single;

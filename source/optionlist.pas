@@ -11,7 +11,7 @@ unit OptionList;
 interface
 
 uses
-  SysUtils, darknet, data, list;
+  SysUtils, lightnet, data, list;
 
 type
   PKvp = ^TKvp;

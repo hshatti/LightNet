@@ -12,7 +12,7 @@ unit LSTMLayer;
 interface
 
 uses
-  SysUtils, darknet, blas, ConnectedLayer, Activations;
+  SysUtils, lightnet, blas, ConnectedLayer, Activations;
 
 type
     TLSTMLayer = TLayer;

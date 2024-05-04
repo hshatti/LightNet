@@ -12,7 +12,7 @@ unit compare;
 interface
 
 uses
-  Classes, SysUtils, math, utils, darknet, parser, image, nnetwork, data, matrix;
+  Classes, SysUtils, math, utils, lightnet, parser, image, nnetwork, data, matrix;
 
 type
   PSortableBBox = ^TSortableBBox;

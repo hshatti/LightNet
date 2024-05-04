@@ -10,7 +10,7 @@ unit box;
 
 
 interface
-uses SysUtils, Math, utils, darknet;
+uses SysUtils, Math, utils, lightnet;
 
 type
 

@@ -12,7 +12,7 @@ unit ConvLSTMLayer;
 interface
 
 uses
-  sysutils, darknet, ConvolutionalLayer, activations;
+  sysutils, lightnet, ConvolutionalLayer, activations;
 
 type
   PConvLSTMLayer = ^TConvLSTMLayer;

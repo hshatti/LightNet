@@ -11,7 +11,7 @@ unit parser;
 interface
 
 uses
-  Classes, SysUtils, math, darknet, utils, cfg, blas, data, tree
+  Classes, SysUtils, math, lightnet, utils, cfg, blas, data, tree
   , nnetwork
   , Activations
   , LocalLayer
@@ -742,7 +742,7 @@ begin
             if i>0 then
                 a:= copy(a,1,i-1);
             vals := a.Split([',']);
-           for i:= 0 to Darknet.min(length(vals), total * 2)- 1 do
+           for i:= 0 to lightnet.min(length(vals), total * 2)- 1 do
                 TryStrToFloat(vals[i],l.biases[i]);
         end;
     exit(l)

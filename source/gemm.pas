@@ -14,7 +14,7 @@ unit gemm;
 {$pointermath on}
 
 interface
-uses classes, sysutils, col2im, darknet
+uses classes, sysutils, col2im, lightnet
   , steroids
 {$if defined(CLBLAST)}
     , cl

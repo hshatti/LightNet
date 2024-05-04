@@ -12,7 +12,7 @@ unit DetectionLayer;
 interface
 
 uses
-  SysUtils, math, darknet, box, blas;
+  SysUtils, math, lightnet, box, blas;
 
 type TDetectionLayer = TLayer;
 

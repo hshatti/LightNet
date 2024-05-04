@@ -11,7 +11,7 @@ unit ReOrgOldLayer;
 interface
 
 uses
-  sysUtils, Darknet, blas;
+  sysUtils, lightnet, blas;
 
 type
   TReOrgOldLayer = TLayer;

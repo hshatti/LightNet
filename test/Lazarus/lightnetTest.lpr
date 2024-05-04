@@ -12,7 +12,7 @@ uses
   athreads,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, SysUtils, uMain, darknet;
+  Forms, SysUtils, uMain;
 
 {$R *.res}
 const heaptrcFile ='heap.trc';

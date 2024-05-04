@@ -10,7 +10,7 @@ unit ConnectedLayer;
 {$pointermath on}
 
 interface
-uses SysUtils, darknet, utils, blas, BatchNormLayer, Activations, gemm;
+uses SysUtils, lightnet, utils, blas, BatchNormLayer, Activations, gemm;
 
 type
   TConnectedLayer = TLayer;

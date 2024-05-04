@@ -12,7 +12,7 @@ unit ScaleChannelLayer;
 interface
 
 uses
-  SysUtils, Darknet, Activations;
+  SysUtils, lightnet, Activations;
 
 type
   TScaleChannelLayer = TLayer;

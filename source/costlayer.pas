@@ -12,7 +12,7 @@ unit CostLayer;
 interface
 
 uses
-  SysUtils, darknet, blas;
+  SysUtils, lightnet, blas;
 
 type
   TCostLayer = TLayer ;

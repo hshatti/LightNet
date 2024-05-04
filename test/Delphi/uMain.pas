@@ -11,22 +11,16 @@ uses
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
   FMX.Controls.Presentation, FMX.StdCtrls,
   FMX.Memo.Types, FMX.Objects, FMX.ScrollBox, FMX.Memo, TypInfo
-//  ,steroids, blas, gemm , darknet
+  , lightnet, image, cfg, box, nnetwork, parser, data
   , openclhelper ;
 
 type
   TForm1 = class(TForm)
     Button1: TButton;
-    Button2: TButton;
-    CheckBox1: TCheckBox;
     Memo1: TMemo;
     Image1: TImage;
     Button3: TButton;
-    Button4: TButton;
     procedure Button1Click(Sender: TObject);
-    procedure CheckBox1Change(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
-    procedure FormShow(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure Button3Click(Sender: TObject);
   private
@@ -56,42 +50,41 @@ const
   isCapturing :boolean =false;
 
 
-//procedure onNetForward(const idx:longint;const net:PNetwork);
-//var
-//    //s:UnicodeString;
-//  l:PLayer;
-//  p:TSingles;
-//  n:longint;
-//begin
-//  l:=@net.layers[idx];
-//  write(#13,'Detecting ... ',(100*idx/net.n):1:1,'% [',GetEnumName(TypeInfo(TLayerType), ord(net.layers[idx].&type)),']');
-//  Application.ProcessMessages
-//  //if net.n-1 = idx then begin
-//  //    writeln(format('%d x %d x %d , outputs = %d , classes = %d', [l.w, l.h, l.n, l.outputs, l.classes]));
-//      //writeln(format('detections (%.2f%% thresh) = %d', [_thresh,yolo_num_detections(l^,_thresh)]));
-//  //end;
-//
-//end;
+procedure onNetForward(const idx:longint;const net:PNetwork);
+var
+    //s:UnicodeString;
+  l:PLayer;
+  p:TSingles;
+  n:longint;
+begin
+  l:=@net.layers[idx];
+  write(#13,'Detecting ... ',(100*idx/net.n):1:1,'% [',GetEnumName(TypeInfo(TLayerType), ord(net.layers[idx].&type)),']');
+  Application.ProcessMessages
+  //if net.n-1 = idx then begin
+  //    writeln(format('%d x %d x %d , outputs = %d , classes = %d', [l.w, l.h, l.n, l.outputs, l.classes]));
+      //writeln(format('detections (%.2f%% thresh) = %d', [_thresh,yolo_num_detections(l^,_thresh)]));
+  //end;
+
+end;
 
 var isDetecting:boolean;
 
 procedure test_detector(datacfg: string; cfgfile: string; weightfile: string; filenames: TArray<string>; thresh: single; hier_thresh: single; outfile: string; fullscreen: longint);
 var
-//    options: TCFGSection;
+    options: TCFGSection;
     name_list: string;
     names: TArray<string>;
-//    alphabet: TArray<TArray<TImageData>>;
+    alphabet: TArray<TArray<TImageData>>;
     time: int64;
-//    net :TNetwork;
+    net :TNetwork;
     input: string;
     nms: single;
-//    im: TImageData;
-//    sized: TImageData;
-//    l: TLayer;
-    //X: TSingles;
+    im: TImageData;
+    sized: TImageData;
+    l: TLayer;
     X:TArray<single>;
     nboxes,i, labels_size: longint;
-//    dets : TArray<TDetection>;
+    dets : TArray<TDetection>;
 begin
     if isDetecting then begin
        isDetecting:=False;
@@ -99,66 +92,65 @@ begin
     end;
 
 
-//    options := read_data_cfg(datacfg);
-//    name_list := options.getStr('names', 'data/names.list');
-//    names := get_labels_custom(name_list, @labels_size);
-//    alphabet := load_alphabet();
-//    net := parse_network_cfg_custom(cfgfile,1,1);
-//
-//    load_weights(@net, weightfile);
-//    benchmark:=true;
-//    fuse_conv_batchnorm(net);
-//    calculate_binary_weights(net);
-//    //set_batch_network(net, 1);
-//
-//    //RandSeed:=(2222222);
-//    nms := 0.45;
-//    net.onForward:=onNetforward;
-//
-//    l := net.layers[net.n-1];
-//    isDetecting:=True;
-//    i:=0;
-//    while isDetecting  do begin
-//
-//      input:=filenames[i];
-//      im := load_image_color('data/'+input+'.jpg', 0, 0);
-//      Application.ProcessMessages;
-//      sized := letterbox_image(im, net.w, net.h);
-//      X := sized.data;
-//      time := clock();
-//      network_predict(net, X);
-//      writeln(format(#13#10#13#10'%s: Predicted in %.0f[ms]', [input, (clock()-time)/1000000]));
-//      nboxes := 0;
-//      dets := get_network_boxes(@net, im.w, im.h, thresh, hier_thresh, nil, true,  @nboxes,true);
-//      //writeln(format('output[%d][%dX%dX%d]',[l.outputs,l.n, l.h, l.w])+#13#10, l.output.toString(' ',min(200,l.outputs)));
-//      if (nms<>0) and assigned(dets) then
-//          do_nms_sort(dets, nboxes, l.classes, nms);
-//
-//      writeln(format('  thersh[%.2f] Detections [%d]', [thresh, Length(dets)]));
-//      draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 1);
-//        System.SysUtils.DeleteFile(string(input+'1.jpg'));
-//      save_image(im, input+'1');
-//      if FileExists(input+'1.jpg') then
-//          Form1.Image1.Bitmap.loadFromFile(input+'1.jpg');
-//      Form1.Image1.Repaint;
-//      application.ProcessMessages;
-//      inc(i);
-//      if i=length(filenames) then i:=0;
-//      writeln(sLineBreak, metrics.print);
-//      Application.ProcessMessages
-//    end;
-//    free_network(net);
+    options := read_data_cfg(datacfg);
+    name_list := options.getStr('names', 'data/names.list');
+    names := get_labels_custom(name_list, @labels_size);
+    alphabet := load_alphabet();
+    net := parse_network_cfg_custom(cfgfile,1,1);
 
-    //free_detections(dets, nboxes);
-    //exit;
-    //if outfile<>'' then
-    //    save_image(im, outfile)
-    //else
-    //    begin
-    //        save_image(im, 'predictions');
-    //        //make_window('predictions', 512, 512, 0);
-    //        //show_image(im, 'predictions', 0)
-    //    end;
+    load_weights(@net, weightfile);
+    benchmark:=true;
+    fuse_conv_batchnorm(net);
+    calculate_binary_weights(net);
+    //set_batch_network(net, 1);
+
+    //RandSeed:=(2222222);
+    nms := 0.45;
+    net.onForward:=onNetforward;
+
+    l := net.layers[net.n-1];
+    isDetecting:=True;
+    i:=0;
+    while isDetecting  do begin
+
+      input:=filenames[i];
+      im := load_image_color('data/'+input+'.jpg', 0, 0);
+      Application.ProcessMessages;
+      sized := letterbox_image(im, net.w, net.h);
+      X := sized.data;
+      time := clock();
+      network_predict(net, X);
+      writeln(format(#13#10#13#10'%s: Predicted in %.0f[ms]', [input, (clock()-time)/1000000]));
+      nboxes := 0;
+      dets := get_network_boxes(@net, im.w, im.h, thresh, hier_thresh, nil, true,  @nboxes,true);
+      //writeln(format('output[%d][%dX%dX%d]',[l.outputs,l.n, l.h, l.w])+#13#10, l.output.toString(' ',min(200,l.outputs)));
+      if (nms<>0) and assigned(dets) then
+          do_nms_sort(dets, nboxes, l.classes, nms);
+
+      writeln(format('  thersh[%.2f] Detections [%d]', [thresh, Length(dets)]));
+      draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 1);
+        System.SysUtils.DeleteFile(string(input+'1.jpg'));
+      save_image(im, input+'1');
+      if FileExists(input+'1.jpg') then
+          Form1.Image1.Bitmap.loadFromFile(input+'1.jpg');
+      Form1.Image1.Repaint;
+      application.ProcessMessages;
+      inc(i);
+      if i=length(filenames) then i:=0;
+      writeln(sLineBreak, metrics.print);
+      Application.ProcessMessages
+    end;
+    free_network(net);
+//
+    exit;
+    if outfile<>'' then
+        save_image(im, outfile)
+    else
+        begin
+            save_image(im, 'predictions');
+            //make_window('predictions', 512, 512, 0);
+            //show_image(im, 'predictions', 0)
+        end;
 
 
 
@@ -170,6 +162,11 @@ end;
 const filenames: TArray<string> = ['dog','kite','horses','person'];
 procedure TForm1.Button1Click(Sender: TObject);
 begin
+  if isDetecting then
+    Button1.Text := 'Start Detecting'
+  else
+    Button1.Text := 'Stop' ;
+
   test_detector('cfg/coco.data','cfg/yolov7.cfg','yolov7.weights',filenames,thresh,hier_thresh,'',0);
 end;
 
@@ -203,44 +200,6 @@ end;
 //  cap:PCvCapture;
 //  im,im2:PIplImage;
 //  isCapturing:boolean;
-
-procedure TForm1.Button2Click(Sender: TObject);
-var d:double;
-  i:longint;
-  bmp:FMX.Graphics.TBitmap;
-begin
-//  if not isCapturing then exit;
-//  cap:=nil;
-//  im:=nil;
-//  bmp:=nil;
-//  //cvNamedWindow('koko',CV_GUI_NORMAL);
-//  cap := cvCreateCameraCapture(CV_CAP_ANY);
-//
-//  if not assigned(cap) then
-//      raise exception.Create('ERROR : Cannot open device');
-//  cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_WIDTH,640);
-//  cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_HEIGHT,480);
-//
-//  im:=cvQueryFrame(cap);
-//  if not assigned(bmp) then
-//      begin
-//          bmp:=Graphics.TBitmap.create();
-//          bmp.PixelFormat:=([pf8bit, pf16bit, pf24bit, pf32bit])[im.nChannels-1];
-//          bmp.setSize(im.width,im.height);
-//      end;
-//  writeln(im.depth,':',im.imageSize,':',im.channelSeq,':',im.nChannels,' x ', im.height,' x ',im.width);
-//  while isCapturing and not Application.Terminated do begin
-//    im:=cvQueryFrame(cap);
-//    bmp.BeginUpdate();
-//    for i:=0 to im.height-1 do
-//        move(im.imageData[i*im.width*im.nChannels], bmp.ScanLine[i]^,sizeof(TPixel)*im.width);
-//    bmp.EndUpdate();
-//    Image1.Picture.Graphic:=bmp;
-//    Application.ProcessMessages;
-
-//  bmp.free;
-//  cvReleaseCapture(@cap);
-end;
 
 const max_iteration = 10000;
 const lnxp1_max_iteration:single = 0;
@@ -315,9 +274,9 @@ begin
   bmp := FMX.Graphics.TBitmap.Create;
   bmp.setSize(1600, 1600);
   bmp.map(TMapAccess.Write, data);
-//  t:=clock();
+  t:=clock();
 //  Mandel(0, data.Height-1 , @data);
-  if false then begin
+  if True then begin
       ocl.SetParamElementSizes([bmp.height*bmp.Height*sizeof(longword), bmp.Width, bmp.Height]);
       ocl.SetGlobalWorkGroupSize(bmp.height, bmp.width);
       ocl.SetLocalWorkGroupSize(8, 8);
@@ -326,17 +285,10 @@ begin
   else begin
       MP.&for(mandel,0, Data.Height, @data);
   end;
-//  writeln((clock()-t)/1000000:3:3,'MS');
+  writeln((clock()-t)/1000000:3:3,'MS');
   bmp.Unmap(Data);
   Image1.Bitmap:=bmp;
   bmp.Free
-end;
-
-procedure TForm1.CheckBox1Change(Sender: TObject);
-begin
-//  isCapturing:=CheckBox1.Checked;
-//  Button2.Click();
-
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -345,18 +297,12 @@ begin
   Memo1.Lines.Add('Current directory : ' + GetCurrentDir)
 end;
 
-procedure TForm1.FormShow(Sender: TObject);
-begin
-//  SetCurrentDir('../');
-//  Memo1.Lines.Add('Current directory : ' + GetCurrentDir)
-end;
-
 var i,j,k:IntPtr;
     a:array[0..255] of ansichar;
 initialization
 
   ocl := TOpenCL.create(dtALL);
-  ocl.ActivePlatformId:=1;
+//  ocl.ActivePlatformId:=1;
   writeln('Platforms :');
   for i:=0 to ocl.PlatformCount-1 do
     writeln('  ',ocl.PlatformName(i));

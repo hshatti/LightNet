@@ -11,7 +11,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls, math, StrUtils,
-  Darknet, nnetwork, parser, cfg, data, image, box, steroids, OpenCLHelper
+  lightnet, nnetwork, parser, cfg, data, image, box, steroids, OpenCLHelper
   {$ifdef MSWINDOWS}
   , opencv
   {$endif};
@@ -161,8 +161,9 @@ end;
 const filenames: TArray<string> = ['kite','dog','horses','person'];
 procedure TForm1.Button1Click(Sender: TObject);
 begin
-  if isDetecting then
+  if isDetecting then begin
       button1.Caption:='Start Detecting Objects'
+  end
   else
       button1.Caption:='Stop';
   test_detector('cfg/coco.data','cfg/yolov7.cfg','yolov7.weights',filenames,thresh,hier_thresh,'',0);

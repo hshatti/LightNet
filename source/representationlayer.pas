@@ -13,7 +13,7 @@ unit RepresentationLayer;
 interface
 
 uses
-  SysUtils, darknet, blas;
+  SysUtils, lightnet, blas;
 
 type
   TImplicitLayer = TLayer;

@@ -12,7 +12,7 @@ unit RegionLayer;
 interface
 
 uses
-  SysUtils, darknet, activations, SoftmaxLayer, box, blas, tree;
+  SysUtils, lightnet, activations, SoftmaxLayer, box, blas, tree;
 
 type
   PRegionLayer = ^TRegionLayer;

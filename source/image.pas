@@ -14,7 +14,7 @@ interface
 uses
   Classes, SysUtils,
   {$ifdef STB_IMAGE}stb_image, {$else STB_IMAGE} {$if defined(FRAMEWORK_FMX)}FMX.Graphics, FMX.Types {$else}Graphics{$endif} ,{$endif}
-  math, darknet, blas;
+  math, lightnet, blas;
 
 
 function get_color(const c, x, _max: longint):single;

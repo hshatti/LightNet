@@ -13,7 +13,7 @@ unit col2im;
 {$pointermath on}
 
 interface
-uses darknet;
+uses lightnet;
 
 function im2col_get_pixel(const im: PSingle; const height, width, channels:longint; row, col:longint;const channel, pad: longint):single;overload;
 procedure col2im_add_pixel(const im: PSingle; const height, width, channels: longint; row, col:longint;const channel, pad: longint; const val: single); overload;

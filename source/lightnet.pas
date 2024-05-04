@@ -1,4 +1,4 @@
-unit darknet;
+unit lightnet;
 
 {$apptype console}
 {$ifdef fpc}

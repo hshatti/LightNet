@@ -12,7 +12,7 @@ unit utils;
 interface
 
 uses
-  SysUtils, darknet, gemm, blas;
+  SysUtils, lightnet, gemm, blas;
 
 {$ifdef MSWINDOWS}
 //const CLOCKS_PER_SEC: int64 =1000;

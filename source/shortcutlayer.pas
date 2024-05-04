@@ -11,7 +11,7 @@ unit ShortcutLayer;
 interface
 
 uses
-  SysUtils, darknet, Activations, gemm, blas;
+  SysUtils, lightnet, Activations, gemm, blas;
 
 type
   PShortcutLayer = ^TShortcutLayer;

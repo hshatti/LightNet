@@ -12,7 +12,7 @@ unit SAMLayer;
 interface
 
 uses
-  SysUtils, Darknet, Activations;
+  SysUtils, lightnet, Activations;
 
 type
 

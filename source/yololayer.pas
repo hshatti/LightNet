@@ -12,7 +12,7 @@ unit YoloLayer;
 interface
 
 uses
-  Classes, SysUtils, darknet, box, blas, Activations;
+  Classes, SysUtils, lightnet, box, blas, Activations;
 
 type
   PYoloLayer = ^TYoloLayer;
@@ -787,13 +787,13 @@ begin
                     state.net.delta_rolling_std[0] := state.net.delta_rolling_std[0] * 0.99+cur_std * 0.01;
                     final_badlebels_threshold := rolling_avg+rolling_std * state.net.num_sigmas_reject_badlabels;
                     badlabels_threshold := rolling_max-progress_badlabels * abs(rolling_max-final_badlebels_threshold);
-                    badlabels_threshold := Darknet.max(final_badlebels_threshold, badlabels_threshold);
+                    badlabels_threshold := lightnet.max(final_badlebels_threshold, badlabels_threshold);
                     for i := 0 to l.batch * l.outputs -1 do
                         if abs(l.delta[i]) > badlabels_threshold then
                             l.delta[i] := 0;
                     writeln(format(' rolling_std = %f, rolling_max = %f, rolling_avg = %f ', [rolling_std, rolling_max, rolling_avg]));
                     writeln(format(' badlabels loss_threshold = %f, start_it = %d, progress = %f ', [badlabels_threshold, start_point, progress_badlabels * 100]));
-                    ep_loss_threshold := Darknet.min(final_badlebels_threshold, rolling_avg) * progress
+                    ep_loss_threshold := lightnet.min(final_badlebels_threshold, rolling_avg) * progress
                 end;
             if (state.net.badlabels_rejection_percentage<>0) and (start_point < iteration_num) then
                 begin

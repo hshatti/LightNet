@@ -11,7 +11,7 @@ unit ReOrgLayer;
 interface
 
 uses
-  SysUtils, darknet, blas;
+  SysUtils, lightnet, blas;
 
 type
   PReOrgLayer = ^TReOrgLayer;

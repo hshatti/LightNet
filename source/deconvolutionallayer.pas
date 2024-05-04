@@ -12,7 +12,7 @@ unit DeConvolutionalLayer;
 interface
 
 uses
-  SysUtils, darknet, blas, col2im, Activations, BatchNormLayer, gemm;
+  SysUtils, lightnet, blas, col2im, Activations, BatchNormLayer, gemm;
 
 type
   TDeConvolutionalLayer = TLayer;

@@ -13,7 +13,7 @@ unit matrix;
 interface
 
 uses
-  SysUtils, darknet, blas;
+  SysUtils, lightnet, blas;
 
 procedure pm(M: longint; N: longint; A: PSingle);
 procedure free_matrix(const m: TMatrix);

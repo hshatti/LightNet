@@ -14,7 +14,7 @@ unit Activations;
 interface
 
 uses
-  Sysutils, Math, typinfo, darknet;
+  Sysutils, Math, typinfo, lightnet;
 
 
 function stair_activate(const x:single) :single;inline;

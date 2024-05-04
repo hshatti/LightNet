@@ -4,6 +4,7 @@ lib/
 *lib/
 *.bak
 *.o
+*.ppu
 *.lib
 *.dll
 *.cmake
@@ -24,3 +25,7 @@ LightNetDelphi/
 *.bak/
 *.classes/
 __*/
+*.dcu
+*.rsm
+*.identcache
+*.local

@@ -12,7 +12,7 @@ unit iSegLayer;
 interface
 
 uses
-  SysUtils, math, darknet, activations, blas;
+  SysUtils, math, lightnet, activations, blas;
 
 type
     TISegLayer = TLayer;
