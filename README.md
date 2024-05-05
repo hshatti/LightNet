@@ -4,10 +4,11 @@ Implemented in pure pascal LightNet is an artificial intelligence neural network
 this implementation can run most of the darknet including YOLO models nativly and self dependently no external libraries required.
 
 - Currently training & inference runs on CPU , however i have notice that inference runs faster than the Optimized C CPU implementation
-- Optinally, using `-dOPENBLAS`  or `-dMKL` ( Custom options in Lazarus-Ide for example ) will enable "libopenblas" or "Intel's Math Kernel Library" which is further optimized for CPU, however, on lazarus no significant improvement was noticed.
+- Optionally, using `-dOPENBLAS`  or `-dMKL` ( Custom options in Lazarus-Ide for example ) will enable "libopenblas" or "Intel's Math Kernel Library" which is further optimized for CPU, however, on lazarus no significant improvement was noticed.
 - Before running the test make sure that [yolov7.weights](https://sourceforge.net/projects/darknet-yolo.mirror/files/yolov4/) file is placed next to the test project executable.
 - Other .weights models should work (check "cfg" folder) 
 - More Examples coming soon
+
 
 
 ### Work pending 
@@ -16,4 +17,6 @@ this implementation can run most of the darknet including YOLO models nativly an
 - Test on Single Board Computers (NVIDIA Jetson, Raspberry PI, etc..)
 
 
-tests are provided for both Lazarus and Delphi
+tests provided for both Lazarus and Delphi
+
+this project is still at the early stage, if you wish to see more models running in pure pascal, please consider donating [![](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/donate/?hosted_button_id=ANXTNK87HYP4Q)
