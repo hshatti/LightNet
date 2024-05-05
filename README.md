@@ -19,4 +19,6 @@ this implementation can run most of the darknet including YOLO models nativly an
 
 tests provided for both Lazarus and Delphi
 
-this project is still at the early stage, if you wish to see more models running in pure pascal, please consider donating [![](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/donate/?hosted_button_id=ANXTNK87HYP4Q)
+_this project is still at the early stage, if you wish to see more models 
+running in pure pascal, please consider donating here_
+<p align="center">[![](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/donate/?hosted_button_id=ANXTNK87HYP4Q)</p>
