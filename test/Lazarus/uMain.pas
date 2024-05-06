@@ -2,7 +2,7 @@ unit uMain;
 {$ifdef fpc}
    {$mode delphi}
    {$ModeSwitch nestedprocvars}
-   {$asmmode intel}
+   {$ifdef CPUX64}{$asmmode intel}{$endif}
 {$endif}
 {$apptype console}
 
@@ -10,8 +10,9 @@ unit uMain;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls, math, StrUtils,
-  lightnet, nnetwork, parser, cfg, data, image, box, steroids, OpenCLHelper
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
+  ComCtrls, math, TypInfo, StrUtils, lightnet, nnetwork, parser, cfg, data, image, box,
+  steroids, OpenCLHelper
   {$ifdef MSWINDOWS}
   , opencv
   {$endif};
@@ -27,15 +28,26 @@ type
     CheckBox1: TCheckBox;
     Image1: TImage;
     bmp:Graphics.TBitmap;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    Label4: TLabel;
     Memo1: TMemo;
     Panel1: TPanel;
     Panel2: TPanel;
     Splitter1: TSplitter;
     Splitter2: TSplitter;
+    TrackBar1: TTrackBar;
+    TrackBar2: TTrackBar;
+    TrackBar3: TTrackBar;
+    TrackBar4: TTrackBar;
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
     procedure CheckBox1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure TrackBar1Change(Sender: TObject);
   private
   public
   end;
@@ -43,6 +55,7 @@ type
 var
   Form1 : TForm1;
   ocl : TOpenCL;
+  img:TImageData;
 
 implementation
 
@@ -60,6 +73,7 @@ var
 begin
   l:=@net.layers[idx];
   write(#13,idx:4,' Detecting ... ',(100*idx/net.n):1:1,'%  - ', get_layer_string(l.&type),'                     ');
+  Form1.Memo1.Lines[Form1.Memo1.lines.Count-1]:=format('%4d Detecting ... %.1f%% - %s',[idx,(100*idx/net.n), get_layer_string(l.&type)]);
   Application.ProcessMessages;
   //if net.n-1 = idx then begin
   //    writeln(format('%d x %d x %d , outputs = %d , classes = %d', [l.w, l.h, l.n, l.outputs, l.classes]));
@@ -169,6 +183,34 @@ begin
   test_detector('cfg/coco.data','cfg/yolov7.cfg','yolov7.weights',filenames,thresh,hier_thresh,'',0);
 end;
 
+procedure TForm1.Button2Click(Sender: TObject);
+const fileN ='/home/jetson/LightNet/test.bmp';
+var bmp: TBitmap;
+    bmp2: TBitmap;
+  im:TImageData;
+begin
+  bmp:=TBitmap.Create();
+  bmp.PixelFormat:=pf32bit;
+  bmp.SetSize(600, 600);
+  bmp.Canvas.Lock;
+  bmp.canvas.brush.Color:=clRed;
+  bmp.canvas.pen.Color:=clBlue;
+  bmp.canvas.pen.Width:=4;
+  bmp.canvas.Ellipse(200,200,400,400);
+  bmp.Canvas.Unlock;
+  bmp.SaveToFile(fileN);
+  bmp.free;
+  //bmp2:=TBitmap.Create;
+  //bmp2.LoadFromFile(fileN);
+  im:=load_image(fileN,0, 0, 0);
+  bmp2:=imageToBitmap(im);
+  bmp2.canvas.brush.color:=clRed;
+  bmp2.canvas.Ellipse(200,200,400,400);
+  image1.Picture.Graphic:=bmp2;
+  image1.Picture.Bitmap.canvas.TextOut(250,250,  GetEnumName(TypeInfo(TPixelFormat), ord(bmp2.PixelFormat)));
+  bmp2.free
+
+end;
 
 function compares(const a,b:TArray<single>):PtrInt;
 var
@@ -195,11 +237,11 @@ TPixel=record
   b,g,r:byte;
 end;
 
+{$ifdef MSWINDOWS}
 var
-  {$ifdef MSWINDOWS}
   cap:PCvCapture;
   im,im2:PIplImage;
-  {$endif}
+{$endif}
 
 
 procedure TForm1.CheckBox1Change(Sender: TObject);
@@ -245,8 +287,47 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  SetCurrentDir('../');
+  //SetCurrentDir('');
   Memo1.Lines.Add('Current directory : ' + GetCurrentDir)
+end;
+
+procedure TForm1.FormShow(Sender: TObject);
+begin
+
+end;
+
+procedure TForm1.TrackBar1Change(Sender: TObject);
+var c,y,x:longint; P:PSingle;
+label render;
+begin
+  if (img.c=3) and (Sender=TrackBar4) then exit;
+  if img.data<>nil then begin
+      p:=@img.data[0];
+      c:=0;
+      for y:=0 to img.h-1 do
+        for x:=0 to img.w-1 do begin
+          p[(c * img.h + y)* img.w + x]:=TrackBar1.Position/TrackBar1.Max;
+        end;
+      if img.c=1 then goto render;
+      c:=1;
+      for y:=0 to img.h-1 do
+        for x:=0 to img.w-1 do begin
+          p[(c * img.h + y)* img.w + x]:=TrackBar2.Position/TrackBar2.Max;
+        end;
+      c:=2;
+      for y:=0 to img.h-1 do
+        for x:=0 to img.w-1 do begin
+          p[(c * img.h + y)* img.w + x]:=TrackBar3.Position/TrackBar3.Max;
+        end;
+      if img.c=3 then goto render;
+      c:=3;
+      for y:=0 to img.h-1 do
+        for x:=0 to img.w-1 do begin
+          p[(c * img.h + y)* img.w + x]:=TrackBar4.Position/TrackBar4.Max;
+        end;
+  end;
+render:
+  Image1.Picture.Graphic:=imageToBitmap(img, Image1.Picture.Bitmap);
 end;
 
 const max_iteration = 10000;
@@ -326,21 +407,21 @@ begin
 
   bmp := Graphics.TBitmap.Create;
   bmp.PixelFormat:=pf32bit;
-  bmp.setSize(1600, 1600);
+  bmp.setSize(640, 640);
 
 
   b:=bmp.ScanLine[0];
   image1.Picture.Graphic:=bmp;
   bmp.BeginUpdate();
   t:=clock();
-  if true then begin
+  if false then begin
     ocl.SetParamElementSizes([bmp.height*bmp.Height*sizeof(longword), bmp.Width, bmp.Height]);
     ocl.SetGlobalWorkGroupSize(bmp.height, bmp.width);
     ocl.SetLocalWorkGroupSize(2, 2);
     ocl.CallKernel(1,bmp.scanline[0], bmp.width, bmp.Height);
   end
   else begin
-  //  Mandel(0, data.Height-1 , @data);
+    //for i:=0 to bmp.height-1 do Mandel(i , @bmp);
     MP.&for(mandel, 0, bmp.Height, @bmp);
   end;
   bmp.EndUpdate();
@@ -360,12 +441,12 @@ initialization
   for i:=0 to ocl.PlatformCount-1 do
     writeln(ifthen(i=ocl.ActivePlatformId,' *','  '),ocl.PlatformName(i));
 
-
+  ocl.ActiveDeviceId:=0;
   writeln(sLineBreak, sLineBreak,'Devices:');
   for i:=0 to ocl.DeviceCount-1 do
     writeln(ifthen(i=ocl.ActiveDeviceId,' *','  '),ocl.DeviceName(i),', ', ocl.CLDeviceDriver,' : ', ocl.CLDeviceVersion, ' Units :', ocl.ProcessorsCount,' @ ',ocl.ProcessorsFrequency,'Mhz ');
   writeln('');
-  ocl.LoadFromFile(GetCurrentDir+'\source\cl_sgemm.c');
+  ocl.LoadFromFile(GetCurrentDir+'/source/cl_sgemm.c');
   writeln('Build :',ocl.Build);
   writeln(ocl.BuildLog, sLineBreak, sLineBreak, 'Kernels :', sLineBreak);
 
@@ -379,7 +460,8 @@ initialization
 
 finalization
   DoneCriticalSection(semaphor);
-  ocl.free
+  if assigned(ocl) then
+    ocl.free
 
 end.
 

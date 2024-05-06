@@ -21,6 +21,10 @@ type
     private
       FOptions : TArray<string>;
       function tryFindKey(key:string; out val:string):boolean;
+      {$if FPC_RELEASE<2}
+      procedure insert(const s:string; var Arr:TArray<string>; const position:IntPtr);
+      procedure delete(var Arr:TArray<string>;const position, len:IntPtr);
+      {$endif}
     public
       typeName:string;
       procedure setOptions(str:string);
@@ -44,6 +48,9 @@ type
 
   TCFGList = record
     Sections : TArray<TCFGSection>;
+    {$if FPC_RELEASE<2}
+    procedure Insert(const s:TCFGSection; Arr:TArray<TCFGSection>; const position:IntPtr);
+    {$endif}
     function addSection(section:TCFGSection):PCFGSection;
     function isEmpty():boolean;
     function Count():longint;
@@ -65,6 +72,30 @@ begin
     val := trim(copy(FOptions[i],pos('=', FOptions[i])+1))
 end;
 
+{$if FPC_RELEASE<2}
+procedure TCFGSection.insert(const s: string; var Arr: TArray<string>;
+  const position: IntPtr);
+var i:integer;
+begin
+  setLength(Arr,Length(arr)+1);
+  for i:=high(arr) downto position+1 do begin
+    Arr[i]:=Arr[i-1]
+  end;
+  Arr[position]:=s
+end;
+
+procedure TCFGSection.delete(var Arr: TArray<string>; const position,
+  len: IntPtr);
+var
+  i: Integer;
+begin
+  for i:=position to high(Arr)-Len do
+    Arr[i]:=Arr[i+len];
+  setLength(Arr,Length(arr)-len)
+end;
+
+{$endif}
+
 procedure TCFGSection.setOptions(str: string);
 var
   i,j: longint;
@@ -78,7 +109,7 @@ begin
     for j:=1 to length(s) do
       if s[j] in [';','#'] then
         begin
-          delete(s,j,length(s));
+          System.delete(s,j,length(s));
           break
         end ;
     if (s<>'') then
@@ -88,7 +119,7 @@ end;
 
 function TCFGSection.getOptions(): string;
 begin
-  result:=string.Join(sLineBreak, FOptions)
+  result:=(string).Join(sLineBreak, FOptions)
 end;
 
 procedure TCFGSection.addOption(key, val: string);
@@ -111,7 +142,7 @@ begin
   for j:=1 to length(str) do
     if str[j] in [';','#'] then
       begin
-        delete(str,j,length(str));
+        System.delete(str,j,length(str));
         break
       end ;
   if pos('=',str)=0 then exit(false);
@@ -221,6 +252,18 @@ begin
 end;
 
 { TCFGList }
+{$if FPC_RELEASE<2}
+procedure TCFGList.Insert(const s: TCFGSection; Arr: TArray<TCFGSection>;
+  const position: IntPtr);
+var i:integer;
+begin
+  setLength(Arr,Length(arr)+1);
+  for i:=high(arr) downto position+1 do begin
+    Arr[i]:=Arr[i-1]
+  end;
+  Arr[position]:=s
+end;
+{$endif}
 
 function TCFGList.addSection(section: TCFGSection): PCFGSection;
 begin

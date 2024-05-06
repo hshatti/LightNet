@@ -30,7 +30,7 @@ type
       TComparefunc = function(const a,b:T):integer ;
     class procedure shuffle(arr: PT; const n: size_t); static;
     class procedure sorta_shuffle(const arr:PT;const n, sections: size_t);static;
-    class procedure QuickSort(Arr: PT; L, R : Longint; const Compare: TComparefunc; const Descending:boolean=false);static; inline ;
+    class procedure QuickSort(Arr: AT; L, R : Longint; const Compare: TComparefunc; const Descending:boolean=false);static; inline ;
   end;
 
 function basecfg(const cfgfile:string):string;
@@ -224,7 +224,8 @@ begin
   end
 end;
 
-class procedure TTools<T>.QuickSort(Arr: PT; L, R : Longint; const Compare: TComparefunc;const Descending:boolean);
+class procedure TTools<T>.QuickSort(Arr: AT; L, R: Longint;
+  const Compare: TComparefunc; const Descending: boolean);
 var I,J ,neg :longint;
     P, Q :T;
 begin

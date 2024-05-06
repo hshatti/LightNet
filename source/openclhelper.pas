@@ -354,17 +354,21 @@ constructor TOpenCL.Create(deviceType: TCLDeviceType);
 var i:integer;
 begin
   FDeviceType:=deviceType;
+  FPlatformCount:=0;
   FillChar(FParamSizes,sizeof(FParamSizes),0);
   for i:=0 to high(FGlobalOffsets) do FGlobalOffsets[i]:=0;
   N:=Length(cInfo);
-  FErr:=clGetPlatformIDs(0,nil,@FPlatformCount);CheckError;
-  SetLength(FPlatforms,FPlatformCount);
-  FErr:=clGetPlatformIDs(FPlatformCount,@FPlatforms[0],nil);CheckError;
-  FSrc:=TStringList.Create;
-  FActivePlatformId:=$7fffffff;
-  FActiveDeviceId:=$7fffffff;
-  FWorkItemDimensions:=1;
-  SetActivePlatformId(0);
+  FErr:=clGetPlatformIDs(0,nil,@FPlatformCount);
+  if FErr=CL_SUCCESS then
+    if FPlatformCount>0 then begin
+      SetLength(FPlatforms,FPlatformCount);
+      FErr:=clGetPlatformIDs(FPlatformCount,@FPlatforms[0],nil);CheckError;
+      FSrc:=TStringList.Create;
+      FActivePlatformId:=$7fffffff;
+      FActiveDeviceId:=$7fffffff;
+      FWorkItemDimensions:=1;
+      SetActivePlatformId(0);
+    end;
 end;
 
 destructor TOpenCL.Destroy;

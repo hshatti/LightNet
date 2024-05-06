@@ -34,7 +34,11 @@
 // CL_IMAGE_FORMAT           CL_IMAGE_FORMAT_INFO
 
 unit OpenCL;
-
+{$ifdef fpc}
+  {$mode Delphi}
+{$else}
+  {$EXCESSPRECISION off}
+{$endif}
 
 interface
 {.$DEFINE DYNLINK}
@@ -1319,7 +1323,7 @@ initialization
       clEnqueueBarrier             := getProcAddress(hLib, 'clEnqueueBarrier');
     end
   {$else}
-    if hLib<>0 then begin
+    if hLib<>nil then begin
       clGetPlatformIDs             := dlsym(hLib, 'clGetPlatformIDs');
       clGetPlatformInfo            := dlsym(hLib, 'clGetPlatformInfo');
       clGetDeviceIDs               := dlsym(hLib, 'clGetDeviceIDs');

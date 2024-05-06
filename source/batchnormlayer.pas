@@ -5,7 +5,9 @@ unit BatchNormLayer;
   {$ModeSwitch typehelpers}
   {$ModeSwitch nestedprocvars}
   {$ModeSwitch advancedrecords}
-  {$asmmode intel}
+  {$ifdef CPUX64}
+          {$asmmode intel}
+  {$endif}
 {$endif}
 {$pointermath on}
 

@@ -9,7 +9,7 @@ unit blas;
   {$ifdef CPUX86_64}
      {$asmmode intel}
   {$endif}
-  {$FPUType AVX2}
+  {$ifdef MSWINDOWS}{$FPUType AVX2}{$endif}
 {$else}
 {$excessprecision off}
 {$endif}

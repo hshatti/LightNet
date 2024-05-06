@@ -83,6 +83,7 @@ begin
     result.classes := classes;
     result.cost := TSingles.Create(1);
     result.biases := TSingles.Create(total * 2);
+    result.nbiases := total * 2;
     if assigned(mask) then
         result.mask := mask
     else

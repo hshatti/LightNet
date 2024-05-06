@@ -6,8 +6,10 @@ unit gemm;
   {$ModeSwitch typehelpers}
   {$ModeSwitch nestedprocvars}
   {$ModeSwitch advancedrecords}
-  {.$FPUType AVX2}
-  {$asmmode intel}
+  {$ifdef CPUX64}
+    {.$FPUType AVX2}
+    {$asmmode intel}
+  {$endif}
 {$else}
   {$excessprecision off}
 {$endif}

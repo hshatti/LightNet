@@ -84,12 +84,14 @@ unit steroids;
   {$ModeSwitch typehelpers}
   {$ModeSwitch nestedprocvars}
   {$ModeSwitch advancedrecords}
-  {$FPUType AVX2}
-  {$asmmode intel}
+  {$ifdef MSWINDOWS}
+    {$FPUType AVX2}
+    {$asmmode intel}
+  {$endif}
   //{$PackRecords C}
 {$endif}
 interface
-uses Classes, math {$ifdef MSWINDOWS}, windows{$else}{$endif} {$ifndef FPC}, SyncObjs{$endif};
+uses Sysutils, Classes, math {$ifdef MSWINDOWS}, windows{$else}{$endif} {$ifndef FPC}, SyncObjs{$endif};
 
 {$ifdef FPC}
 
@@ -179,7 +181,7 @@ function GetSystemThreadCount: integer;
 {$else}
 {$ifdef fpc}
 const _SC_NPROCESSORS_ONLN = 58;
-function sysconf(cmd: Integer): longint;winapi; external;
+function sysconf(cmd: Integer): longint;cdecl; external;
 {$endif}
 {$endif}
 
@@ -398,6 +400,18 @@ procedure TOPool.WaitForPool;
 var dummy:int64 ;
 begin
   while isBusy() do
+    {$ifdef fpc}
+      {$ifdef CPUX64}
+        asm
+          pause
+        end;
+      {$else}
+        sleep(1)
+      {$endif}
+    {$else}
+      TInterLocked.Exchange(dummy,not dummy);
+    {$endif}
+
 
 //    InterLockedExchange64(dummy,not dummy);
 //  asm

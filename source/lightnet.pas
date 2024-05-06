@@ -79,6 +79,7 @@ type
   { TSinglesHelper }
 
   TSinglesHelper = record helper for TSingles
+  public
     constructor Create(const aCount:size_t);
     procedure ReAllocate(const aCount:size_t);
     function Count():size_t;
@@ -341,7 +342,7 @@ type
   TMatrix = record
       rows : longint;
       cols : longint;
-      vals : TArray<TArray<Single>>//TSingles2d;
+      vals : array of TArray<Single>//TSingles2d;
       //vals : TArray<TSingles>;
     end;
 
@@ -1005,8 +1006,6 @@ const
     {$endif}
   {$endif}
 
-      class operator initialize({$ifdef FPC}var{$else}out{$endif} o:TLayer);
-      class operator finalize(var l:TLayer);
     end;
 
   TNetwork = record
@@ -2433,16 +2432,6 @@ begin
 end;
 
 { TLayer }
-
-class operator TLayer.initialize({$ifdef FPC}var{$else}out{$endif} o: TLayer);
-begin
-
-end;
-
-class operator TLayer.finalize(var l: TLayer);
-begin
-  //free_layer(l)
-end;
 
 initialization
 {$ifdef MSWINDOWS}

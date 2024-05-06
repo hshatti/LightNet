@@ -6,7 +6,9 @@ unit ConvolutionalLayer;
   {$ModeSwitch typehelpers}
   {$ModeSwitch nestedprocvars}
   {$ModeSwitch advancedrecords}
-  {$asmmode intel}
+  {$ifdef CPUX64}
+    {$asmmode intel}
+  {$endif}
 {$else}
 {$excessprecision off}
 {$endif}

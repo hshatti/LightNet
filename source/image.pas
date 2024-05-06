@@ -121,6 +121,8 @@ procedure show_image_normalized(const im: TImageData; const name: string);
 procedure show_images(const ims: TArray<TImageData>; const n: longint; const window: string);
 procedure free_image(const m: TImageData);
 procedure copy_image_from_bytes(const im: TImageData; const pdata: PAnsiChar);
+function bitmapToImage(const bmp:TBitmap):TImageData;
+function imageToBitmap(const im:TImageData; bmp:TBitmap=nil):TBitmap;
 
 implementation
 uses box, utils;
@@ -527,7 +529,8 @@ begin
     frame_id := 0;
     inc(frame_id);
     selected_detections := get_actual_detections(dets, num, thresh, @selected_detections_num, names);
-    TTools<TDetectionWithClass>.QuickSort(Pointer(selected_detections), 0, selected_detections_num-1, compare_by_lefts);
+    if selected_detections_num=0 then exit();
+    TTools<TDetectionWithClass>.QuickSort(selected_detections, 0, selected_detections_num-1, compare_by_lefts);
     for i := 0 to selected_detections_num -1 do
         begin
             best_class := selected_detections[i].best_class;
@@ -554,7 +557,7 @@ begin
                             writeln('')
                     end
         end;
-    TTools<TDetectionWithClass>.QuickSort(Pointer(selected_detections), 0, selected_detections_num-1, compare_by_probs);
+    TTools<TDetectionWithClass>.QuickSort(selected_detections, 0, selected_detections_num-1, compare_by_probs);
     for i := 0 to selected_detections_num -1 do
         begin
             width := trunc(im.h * 0.002);
@@ -670,7 +673,7 @@ end;
 
 
 procedure draw_detections(const im: TImageData; const dets: TArray<TDetection>;
-  const num: longint; const thresh: single; const names: TArray<String>;
+  const num: longint; const thresh: single; const names: TArray<string>;
   const alphabet: TArray<TArray<TImageData>>; const classes: longint);
 var
     i, j, &class, width, offset, left, right, top, bot: longint;
@@ -1906,9 +1909,13 @@ end;
 
 
 const
+  {$ifdef MSWINDOWS}
     colorMap3:array[0..2] of byte = (2,1,0);
     colorMap4:array[0..3] of byte = (2,1,0,3);
-
+  {$else}
+    colorMap3:array[0..2] of byte = (2,1,0);
+    colorMap4:array[0..3] of byte = (0,1,2,3);
+  {$endif}
 procedure save_image_options(const im: TImageData; const name: string; const f: TImType; const quality: longint);
 {$ifdef FRAMEWORK_FMX}
 const pf :TPixelFormat = TPixelFormat.BGR;
@@ -2023,7 +2030,11 @@ begin
             for j:=0 to im.h-1 do begin
               d:=bmp.ScanLine[j];
               for i:=0 to im.w-1 do
-                  d[cm[k]+i*c]:=trunc(im.data[k*im.w*im.h+j*im.w+i]*$ff);
+              {$ifdef MSWINDOWS}
+                d[cm[k]+i*c]:=trunc(im.data[k*im.w*im.h+j*im.w+i]*$ff);
+              {$else}
+                d[cm[k]+i*4]:=trunc(im.data[k*im.w*im.h+j*im.w+i]*$ff);
+              {$endif}
             end;
           bmp.SaveToFile(buff);
           freeAndNil(bmp)
@@ -2037,7 +2048,11 @@ begin
             for j:=0 to im.h-1 do begin
               d:=png.ScanLine[j];
               for i:=0 to im.w-1 do
+              {$ifdef MSWINDOWS}
                   d[cm[k]+i*c]:=trunc(im.data[k*im.w*im.h+j*im.w+i]*$ff);
+              {$else}
+                  d[cm[k]+i*4]:=trunc(im.data[k*im.w*im.h+j*im.w+i]*$ff);
+              {$endif}
             end;
           png.SaveToFile(buff);
           freeAndNil(png)
@@ -2051,7 +2066,11 @@ begin
             for j:=0 to im.h-1 do begin
               d:=jpg.ScanLine[j];
               for i:=0 to im.w-1 do
+              {$ifdef MSWINDOWS}
                   d[cm[k]+i*c]:=trunc(im.data[k*im.w*im.h+j*im.w+i]*$ff);
+              {$else}
+                  d[cm[k]+i*4]:=trunc(im.data[k*im.w*im.h+j*im.w+i]*$ff);
+              {$endif}
             end;
           jpg.CompressionQuality:=quality;
           jpg.Compress;
@@ -2109,25 +2128,9 @@ end;
 {$else}
 var
     w, h, c, x, y, k, dst_index, src_index: longint;
-    data : PByte;
+    data, cm : PByte; bpp:longint;
 {$ifndef STB_IMAGE}
     pic:TPicture;
-
-    ppb:longint;
-  function readPixel(const x:longint; const p: byte):single;
-  begin
-    case pic.PNG.PixelFormat of
-        pf1bit : result :=  byte((($80 shr (x mod 8)) and data[x div 8])>0);
-        pf4bit : ;
-        pf8bit : result := data[x]/$ff;
-        pf15bit: ;
-        pf16bit: ;
-        pf24bit: result := data[x*3+colorMap3[p]]/$ff;
-    else
-        result := data[x*4+colorMap4[p]]/$ff;
-    end;
-  end;
-
 {$endif}
 begin
 {$ifdef STB_IMAGE}
@@ -2152,7 +2155,7 @@ begin
 {$else}
    pic := TPicture.Create;
    pic.LoadFromFile(filename);
-   ppb :=  pic.Bitmap.RawImage.Description.BitsPerPixel;
+   cm:=@colorMap4[0];
    case pic.bitmap.PixelFormat of
      pf32bit : c := 4;
      pf24bit : c := 3;
@@ -2161,19 +2164,53 @@ begin
    else
        c:=3;
    end;
-   w:=pic.Width;
-   h:=pic.Height;
+   if c=3 then
+       cm:=@colorMap3[0];
+   w:=pic.bitmap.Width;
+   h:=pic.bitmap.Height;
    if channels=0 then channels := c;
    result := make_image(w, h, channels);
-   for k:=0 to channels-1 do
-       for y:=0 to pic.height -1 do begin
-          data := pic.png.ScanLine[y];
-          for x:=0 to pic.Width -1 do begin
-              dst_index := x+w * y+w * h * k;
-              src_index := x;//+c * w * y;
-              result.data[dst_index] := readpixel(src_index, k);
-          end;
-       end;
+   {$ifdef fpc}
+   bpp := pic.bitmap.RawImage.Description.BitsPerPixel div 8;
+   {$endif}
+   case pic.Bitmap.PixelFormat of
+     pf32bit, pf24bit, pfDevice:
+       for k:=0 to channels-1 do
+           for y:=0 to pic.bitmap.height -1 do begin
+              data := pic.Bitmap.ScanLine[y];
+              for x:=0 to pic.bitmap.Width -1 do begin
+                  dst_index := x + w*(y + h * k);
+                  src_index := x;//+c * w * y;
+                  {$ifdef fpc}
+                  result.data[dst_index] := data[src_index*bpp+cm[k]]/$ff;
+                  //if result.data[dst_index]>0 then
+                      //sleep(1);
+                  {$else}
+                  result.data[dst_index] := data[src_index*c+cm[k]]/$ff;
+                  {$endif}
+              end;
+           end;
+     pf8bit:
+       for k:=0 to channels-1 do
+           for y:=0 to pic.bitmap.height -1 do begin
+              data := pic.Bitmap.ScanLine[y];
+              for x:=0 to pic.bitmap.Width -1 do begin
+                  dst_index := x + w*(y + h * k);
+                  src_index := x;//+c * w * y;
+                  result.data[dst_index] := data[src_index]/$ff;
+              end;
+           end;
+     pf1bit:
+       for k:=0 to channels-1 do
+           for y:=0 to pic.bitmap.height -1 do begin
+              data := pic.Bitmap.ScanLine[y];
+              for x:=0 to pic.bitmap.Width -1 do begin
+                  dst_index := x + w*(y + h * k);
+                  src_index := x;//+c * w * y;
+                  result.data[dst_index] := byte(((1 shl (src_index mod 8)) and data[src_index div 8])>0);
+              end;
+           end;
+   end;
    //print_Image(result);
 
    FreeAndNil(pic);
@@ -2211,6 +2248,153 @@ begin
     for i := 0 to m.h * m.w -1 do
         result.data[i] := m.data[i+l * m.h * m.w];
 end;
+
+function bitmapToImage(const bmp:TBitmap):TImageData;
+{$ifdef FRAMEWORK_FMX}
+var
+    data : TBitmapData;
+    c, x, y : longint;
+    cm, d   : PByte;
+    channels:longint;
+begin
+  try
+    bmp.Map(TMapAccess.Read, data);
+    channels := data.BytesPerPixel;
+    case data.BytesPerPixel of
+      4 :
+        cm :=@colorMap4[0];
+      3 :
+        cm:= @colorMap3[0];
+    end;
+
+    result := make_image(bmp.Width, bmp.Height, channels);
+    for y := 0 to bmp.Height-1 do begin
+      d := data.GetScanline(y);
+      for x:=0 to bmp.Width-1 do begin
+        for c:=0 to channels-1 do
+          result.data[c * bmp.Height * bmp.Width + y * bmp.Width + x]:= d[x *channels + cm[c]]/ $ff
+      end;
+    end;
+  finally
+    bmp.Unmap(data);
+  end;
+end;
+{$else}
+var
+    w, h, c, x, y, k, dst_index, src_index: longint;
+    data : PByte;
+  function readPixel(const x:longint; const p: byte):single;
+  begin
+    case bmp.PixelFormat of
+        pf1bit : result :=  byte((($80 shr (x mod 8)) and data[x div 8])>0);
+        pf4bit : ;
+        pf8bit : result := data[x]/$ff;
+        pf15bit: ;
+        pf16bit: ;
+        pf24bit: result := data[x*3+colorMap3[p]]/$ff;
+    else
+        result := data[x*4+colorMap4[p]]/$ff;
+    end;
+  end;
+
+begin
+   case bmp.PixelFormat of
+     pf32bit : c := 4;
+     pf24bit : c := 3;
+     pf16bit, pf15bit : c := 2;
+     pf8bit, pf4bit, pf1bit  : c := 1;
+   else
+       c:=3;
+   end;
+   w:=bmp.Width;
+   h:=bmp.Height;
+   result := make_image(w, h, c);
+   for k:=0 to c-1 do
+       for y:=0 to bmp.height -1 do begin
+          data := bmp.ScanLine[y];
+          for x:=0 to bmp.Width -1 do begin
+              dst_index := x+w * y+w * h * k;
+              src_index := x;//+c * w * y;
+              result.data[dst_index] := readpixel(src_index, k);
+          end;
+       end;
+   //print_Image(result);
+end;
+{$endif}
+
+
+function imageToBitmap(const im: TImageData; bmp: TBitmap): TBitmap;
+{$ifdef FRAMEWORK_FMX}
+const pf :TPixelFormat = TPixelFormat.BGR;
+var pic :TBitmap;
+    data : TBitmapData;
+    c, channels, x, y : longint;
+    cm, d   : PByte;
+begin
+  if bmp<>nil then pic:=bmp else pic:=TBitmap.Create;
+  if im.c=4 then
+    pf := TPixelFormat.BGRA;
+  cm:=@colormap4[0];
+
+  pic.SetSize(im.w, im.h);
+  pic.Map(TMapAccess.ReadWrite, data);
+  channels := data.BytesPerPixel;
+//  pic.PixelFormat := pf;
+  if channels=3 then
+    cm:=@colorMap3[0];
+  for y := 0 to im.h -1 do begin
+    d:=data.GetScanline(y);
+    for x := 0 to im.w-1 do begin
+      d[x * channels + 3] := $ff;
+      for c := 0 to im.c-1 do begin
+        d[x * channels + cm[c]] := trunc(im.data[ c * im.h * im.w + y * im.w + x ] * $ff);
+      end
+    end
+  end;
+
+  pic.Unmap(data);
+  result := pic;
+
+end;
+{$else}
+const
+    pf :TPixelFormat = pf24bit;
+var
+    data:TArray<Byte>;
+    d,cm:PByte; bpp:byte;
+    x, y, c: longint;
+begin
+    case im.c of
+      1: pf := pf8bit;
+      3: pf := pf24bit;
+      4: pf := pf32bit;
+    end;
+    cm:=@colorMap4[0];
+    if pf=pf24bit then
+            cm:=@colorMap3[0];
+    if bmp=nil then bmp:=TBitmap.Create;
+    c:=bmp.Canvas.Pixels[1,1];
+    bmp.PixelFormat:=pf;
+    bmp.SetSize(im.w, im.h);
+    bmp.BeginUpdate();
+    {$ifdef fpc}
+    bpp:=bmp.RawImage.Description.BitsPerPixel div 8;
+    {$endif}
+    for c:=0 to im.c -1 do
+      for y:=0 to im.h-1 do begin
+        d:=bmp.ScanLine[y];
+        for x:=0 to im.w-1 do
+          {$ifdef fpc}
+            d[cm[c] + x*bpp]:=trunc(im.data[(c * im.h+y) * im.w + x]*$ff);
+          {$else}
+            d[cm[c] + x*im.c]:=trunc(im.data[(c * im.h+y) * im.w + x]*$ff);
+          {$endif}
+      end;
+    bmp.EndUpdate();
+    result := bmp;
+    //free(data);
+end;
+{$endif}
 
 procedure print_image(const m: TImageData);
 var

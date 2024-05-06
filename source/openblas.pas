@@ -11,7 +11,7 @@ uses types;
   {$elseif defined(DARWIN)}
     const libopenblas='libopenblas.dylib';
   {$else}
-    const libopenblas='libopenblas.so' ;
+    const libopenblas='openblas.so.0' ;
   {$endif}
 {$endif}
 
@@ -21,6 +21,7 @@ uses types;
   size_t = NativeUInt;
   {$ifdef LINUX}
   Pcpu_set_t  = ^cpu_set_t;
+  cpu_set_t = longint;
   {$endif}
 
 {$if defined(WINDOWS) and defined(CPUX86_64)}
