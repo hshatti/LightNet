@@ -26,8 +26,8 @@ uses classes, sysutils, col2im, lightnet
 {$elseif defined(MKL)}
   , mkl_cblas
 {$elseif defined(vDSP) and defined(DARWIN)}
+  {$Linkframework Accelerate}
   ,vDSP
-{$else}
   {$define GEMM}
 {$endif}
 ;
@@ -1042,7 +1042,13 @@ begin
             M, N, K, ALPHA, A, lda, B, ldb, BETA, C,ldc)
 {$else}
     if BETA<>1 then
-    {$if defined(vDSP) and defined(DARWIN}
+    {$if defined(vDSP) and defined(DARWIN)}
+    if ldc =1 then
+      vDSP_vsmul(C, ldc, @BETA, C, ldc ,M*N)
+    else
+        for i := 0 to M -1 do
+            vDSP_vsmul(C, ldc, @BETA, C, ldc ,N);
+    {$else}
       if ldc =1 then
         smulvs(C, BETA, ldc ,M*N)
       else
@@ -1055,7 +1061,11 @@ begin
         {$if defined(FPUAVX2)}
         gemm_nn_fast(M, N, K, ALPHA, A, lda, B, ldb, C, ldc)
         {$else}
+        {$if defined(vDSP) and defined(DARWIN)}
+        vDSP_mmul(A, lda, B, ldb, C, ldc, M ,N, K)
+        {$else}
         gemm_nn(M, N, K, ALPHA, A, lda, B, ldb, C, ldc)
+        {$endif}
         {$endif}
     else  if boolean(TA) and not boolean(TB) then
         gemm_tn(M, N, K, ALPHA, A, lda, B, ldb, C, ldc)
