@@ -63,7 +63,23 @@ __kernel void mandel(__global uchar *buf, const int w, const int h){
       oldAbs = currentAbs;
       iteration++;
   }
-  if (iteration == max_iteration) {
+  if (iteration == max_iteration)
+#if defined(__APPLE__)
+  {
+      buf[x] = 0xff;
+      buf[x+1] = 0;
+      buf[x+2] = 0;
+      buf[x+3] = 0;
+  } else
+  {
+      uchar c = 0xff * log1p(coverageNum)/lnxp1_max_iteration;
+      buf[x+0] = 0xff;
+      buf[x+1] = c;
+      buf[x+2] = c;
+      buf[x+3] = c;
+   }
+#else
+  {
       buf[x] = 0;
       buf[x+1] = 0;
       buf[x+2] = 0;
@@ -76,4 +92,5 @@ __kernel void mandel(__global uchar *buf, const int w, const int h){
       buf[x+2] = c;
       buf[x+3] = 0xff;
   }
+#endif
 }

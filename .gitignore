@@ -20,6 +20,8 @@ lib/
 lightnetTest
 darknetTest
 build.bat
+lightnetTest.*/
+.DS_Store
 
 # Delphi
 backup/
@@ -27,6 +29,7 @@ LightNetDelphi/
 *.bak/
 *.classes/
 __*/
+*.jpg
 *.dcu
 *.rsm
 *.identcache

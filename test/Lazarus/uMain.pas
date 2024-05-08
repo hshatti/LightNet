@@ -196,7 +196,7 @@ var bmp: TBitmap;
   im:TImageData;
 begin
   if img.data=nil then
-      img:=make_image(600,600,4);
+      img:=make_image(600,600,3);
   //bmp:=TBitmap.Create();
   //bmp.PixelFormat:=pf32bit;
   //bmp.SetSize(600, 600);
@@ -395,14 +395,25 @@ begin
                 inc(iteration);
             end;
             if iteration=max_iteration then begin
+            {$ifdef MSWINDOWS}
                 PLongWord(@d[x*4])^ := $ff000000;
+            {$else}
+                PLongWord(@d[x*4])^ := $000000ff;
+            {$endif}
             end else
             begin
                 c := trunc($ff * ln(1+coverageNum)/lnxp1_max_iteration);
+            {$ifdef MSWINDOWS}
                 d[x*4+0] := c;
                 d[x*4+1] := c;//trunc(c*1.2) and $ff;
                 d[x*4+2] := c;//trunc(c*2.4) and $ff;
                 d[x*4+3] := $ff
+            {$else}
+                d[x*4+0] := $ff;
+                d[x*4+1] := c;//trunc(c*1.2) and $ff;
+                d[x*4+2] := c;//trunc(c*2.4) and $ff;
+                d[x*4+3] := c
+            {$endif}
             end;
         end;
 end;

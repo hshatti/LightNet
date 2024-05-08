@@ -1910,9 +1910,12 @@ end;
 
 const
     colorMap1:array[0..0] of byte = (0);
-  {$ifdef MSWINDOWS}
+  {$if defined(MSWINDOWS)}
     colorMap3:array[0..2] of byte = (2,1,0);
     colorMap4:array[0..3] of byte = (2,1,0,3);
+  {$elseif defined (MACOS) or defined (DARWIN)}
+    colorMap3:array[0..2] of byte = (1,2,3);
+    colorMap4:array[0..3] of byte = (1,2,3,0);
   {$else}
     colorMap3:array[0..2] of byte = (2,1,0);
     colorMap4:array[0..3] of byte = (0,1,2,3);

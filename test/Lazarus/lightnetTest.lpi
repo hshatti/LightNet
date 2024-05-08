@@ -22,7 +22,8 @@
             <Filename Value="../../lightnetTest.exe"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="../../source"/>
+            <IncludeFiles Value="../../source;$(ProjOutDir)"/>
+            <Libraries Value="../..;/opt/intel/oneapi/mkl/latest/lib/"/>
             <OtherUnitFiles Value="../../source"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
@@ -35,6 +36,7 @@
           <Linking>
             <Debugging>
               <GenerateDebugInfo Value="False"/>
+              <RunWithoutDebug Value="True"/>
               <DebugInfoType Value="dsDwarf3"/>
               <UseLineInfoUnit Value="False"/>
             </Debugging>
@@ -49,16 +51,12 @@
             <CustomOptions Value="-OoFASTMATH
 -OoLOOPUNROLL
 -dUSE_MULTITHREADING
--dUSE_TELEMETRY"/>
-            <OtherDefines Count="8">
-              <Define0 Value="OPENBLAS_USE64BITINT"/>
-              <Define1 Value="OPENBLAS"/>
-              <Define2 Value="MKL"/>
-              <Define3 Value="CLBLAST"/>
-              <Define4 Value="CLBLAS"/>
-              <Define5 Value="DEBUG"/>
-              <Define6 Value="USE_MULTITHREADING"/>
-              <Define7 Value="USE_TELEMETRY"/>
+-dUSE_TELEMETRY
+-dvDSP"/>
+            <OtherDefines Count="3">
+              <Define0 Value="USE_MULTITHREADING"/>
+              <Define1 Value="USE_TELEMETRY"/>
+              <Define2 Value="OPENBLAS"/>
             </OtherDefines>
           </Other>
         </CompilerOptions>
@@ -225,16 +223,6 @@
 -OoLOOPUNROLL
 -dUSE_MULTITHREADING
 -dUSE_TELEMETRY"/>
-      <OtherDefines Count="8">
-        <Define0 Value="OPENBLAS_USE64BITINT"/>
-        <Define1 Value="OPENBLAS"/>
-        <Define2 Value="MKL"/>
-        <Define3 Value="CLBLAST"/>
-        <Define4 Value="CLBLAS"/>
-        <Define5 Value="DEBUG"/>
-        <Define6 Value="USE_MULTITHREADING"/>
-        <Define7 Value="USE_TELEMETRY"/>
-      </OtherDefines>
     </Other>
   </CompilerOptions>
   <Debugging>

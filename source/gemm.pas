@@ -25,6 +25,8 @@ uses classes, sysutils, col2im, lightnet
   , openblas
 {$elseif defined(MKL)}
   , mkl_cblas
+{$elseif defined(vDSP) and defined(DARWIN)}
+  ,vDSP
 {$else}
   {$define GEMM}
 {$endif}
@@ -1040,11 +1042,13 @@ begin
             M, N, K, ALPHA, A, lda, B, ldb, BETA, C,ldc)
 {$else}
     if BETA<>1 then
+    {$if defined(vDSP) and defined(DARWIN}
       if ldc =1 then
         smulvs(C, BETA, ldc ,M*N)
       else
           for i := 0 to M -1 do
             smulvs(@C[i*ldc], BETA, ldc ,N);
+    {$endif}
             //for j := 0 to N -1 do
             //  C[i * ldc+j] := C[i * ldc+j] * BETA;
     if not boolean(TA) and not boolean(TB) then

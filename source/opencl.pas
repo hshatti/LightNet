@@ -51,8 +51,8 @@ uses SysUtils
 {$else}
 , Posix.Dlfcn
 {$endif}
-{$elseif defined(MACOS)}
-
+{$elseif defined(MACOS) or defined(DARWIN)}
+  {$LinkFramework OpenCL}
 {$endif}
 ;
 const
@@ -1248,11 +1248,9 @@ initialization
       hLib := LoadLibrary('OpenCL.dll');
   {$elseif defined(ANDROID) or defined(LINUX)}
     hLib := dlopen('libOpenCL.so',RTLD_NOW);
-  {$elseif defined(MACOS)}
-
   {$endif}
 
-  {$ifdef MSWINDOWS}
+  {$if defined(MSWINDOWS)}
   if hLib<>0 then
     begin
       clGetPlatformIDs             := getProcAddress(hLib, 'clGetPlatformIDs');
@@ -1322,7 +1320,8 @@ initialization
       clEnqueueWaitForEvents       := getProcAddress(hLib, 'clEnqueueWaitForEvents');
       clEnqueueBarrier             := getProcAddress(hLib, 'clEnqueueBarrier');
     end
-  {$else}
+    else raise Exception.Create('OpenCL Library not found!');
+  {$elseif not (DEFINED(DARWIN) or DEFINED(MACOS))}
     if hLib<>nil then begin
       clGetPlatformIDs             := dlsym(hLib, 'clGetPlatformIDs');
       clGetPlatformInfo            := dlsym(hLib, 'clGetPlatformInfo');
@@ -1391,14 +1390,14 @@ initialization
       clEnqueueWaitForEvents       := dlsym(hLib, 'clEnqueueWaitForEvents');
       clEnqueueBarrier             := dlsym(hLib, 'clEnqueueBarrier');
     end
-  {$endif}
     else raise Exception.Create('OpenCL Library not found!');
+{$endif}
 
 finalization
 
     {$if defined(MSWINDOWS)}
     if hLib<>0 then FreeLibrary(hLib);
-    {$elseif defined(UNIX) or defined(POSIX)}
+    {$elseif not (defined(DARWIN) or defined(MACOS))}
     if Assigned(hLib) then dlclose(hLib);
     {$endif}
 

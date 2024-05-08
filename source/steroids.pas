@@ -111,7 +111,7 @@ type
   {$if defined(MSWindows) or defined(linux)}
   TGroupPriority = TThreadPriority;
   {$else}
-  TGroupPriority = integer;
+  TGroupPriority = TThreadPriority;
   {$endif}
   TGroupProc    = procedure(const _start,_end:PtrInt;const params:Pointer);
   {$ifdef fpc}  TGroupProcNested=procedure(const _start,_end:PtrInt; const params:Pointer)is nested;register;{$endif} // must be [register]?
