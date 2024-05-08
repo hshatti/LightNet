@@ -11,7 +11,7 @@ unit MaxpoolLayer;
 interface
 
 uses
-  SysUtils, math, lightnet, gemm, ConvolutionalLayer, image;
+  SysUtils, math, lightnet, gemm, ConvolutionalLayer, imagedata;
 
 type
   PMaxPoolLayer = ^TMaxPoolLayer;

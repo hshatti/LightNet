@@ -16,6 +16,8 @@ lib/
 *.exe
 *.xml
 *.lps
+*.weights
+lightnetTest
 darknetTest
 build.bat
 

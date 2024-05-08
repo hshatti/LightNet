@@ -15,6 +15,54 @@
     </General>
     <BuildModes>
       <Item Name="Debug" Default="True"/>
+      <Item Name="Release">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <Target>
+            <Filename Value="../../lightnetTest.exe"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="../../source"/>
+            <OtherUnitFiles Value="../../source"/>
+            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <Optimizations>
+              <OptimizationLevel Value="4"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+              <DebugInfoType Value="dsDwarf3"/>
+              <UseLineInfoUnit Value="False"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
+          </Linking>
+          <Other>
+            <CustomOptions Value="-OoFASTMATH
+-OoLOOPUNROLL
+-dUSE_MULTITHREADING
+-dUSE_TELEMETRY"/>
+            <OtherDefines Count="8">
+              <Define0 Value="OPENBLAS_USE64BITINT"/>
+              <Define1 Value="OPENBLAS"/>
+              <Define2 Value="MKL"/>
+              <Define3 Value="CLBLAST"/>
+              <Define4 Value="CLBLAS"/>
+              <Define5 Value="DEBUG"/>
+              <Define6 Value="USE_MULTITHREADING"/>
+              <Define7 Value="USE_TELEMETRY"/>
+            </OtherDefines>
+          </Other>
+        </CompilerOptions>
+      </Item>
       <Item Name="Jetson_DEBUG">
         <CompilerOptions>
           <Version Value="11"/>
@@ -22,7 +70,7 @@
             <Filename Value="../../lightnetTest"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="../../source;$(ProjOutDir)"/>
+            <IncludeFiles Value="../../source"/>
             <OtherUnitFiles Value="../../source"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
@@ -126,16 +174,23 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="darknetTest"/>
       </Unit>
+      <Unit>
+        <Filename Value="../../source/uimgform.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ImgForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../lightnetTest"/>
+      <Filename Value="../../lightnetTest.exe"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="../.."/>
-      <OtherUnitFiles Value="../.."/>
+      <IncludeFiles Value="../../source"/>
+      <OtherUnitFiles Value="../../source"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>
@@ -168,9 +223,18 @@
     <Other>
       <CustomOptions Value="-OoFASTMATH
 -OoLOOPUNROLL
--CfAVX2
 -dUSE_MULTITHREADING
 -dUSE_TELEMETRY"/>
+      <OtherDefines Count="8">
+        <Define0 Value="OPENBLAS_USE64BITINT"/>
+        <Define1 Value="OPENBLAS"/>
+        <Define2 Value="MKL"/>
+        <Define3 Value="CLBLAST"/>
+        <Define4 Value="CLBLAS"/>
+        <Define5 Value="DEBUG"/>
+        <Define6 Value="USE_MULTITHREADING"/>
+        <Define7 Value="USE_TELEMETRY"/>
+      </OtherDefines>
     </Other>
   </CompilerOptions>
   <Debugging>

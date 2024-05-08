@@ -12,7 +12,7 @@ this implementation can run most of the darknet including YOLO models nativly an
 
 
 ### Work pending 
-- OpenCL aand CUDA implementation
+- OpenCL and CUDA implementation
 - Test on other platforms (MacOS, Linux)
 - Test on Single Board Computers (NVIDIA Jetson, Raspberry PI, etc..)
 

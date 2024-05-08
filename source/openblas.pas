@@ -4,8 +4,9 @@ interface
 
 uses types;
 {.$define static}
+{$ifdef static}
 {$linklib openblas}
-{$ifndef static}
+{$else}
   {$if defined(MSWINDOWS)}
     const libopenblas = 'libopenblas.dll' ;
   {$elseif defined(DARWIN)}

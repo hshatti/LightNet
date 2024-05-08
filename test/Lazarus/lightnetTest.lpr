@@ -12,7 +12,7 @@ uses
   athreads,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, SysUtils, uMain;
+  Forms, SysUtils, uMain, uimgform;
 
 {$R *.res}
 const heaptrcFile ='heap.trc';
@@ -25,6 +25,7 @@ begin
   Application.Scaled:=True;
   Application.Initialize;
   Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TImgForm, ImgForm);
   Application.Run;
 end.
 

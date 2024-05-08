@@ -1,0 +1,97 @@
+object ImgForm: TImgForm
+  Left = 187
+  Height = 586
+  Top = 250
+  Width = 838
+  Caption = 'ImgForm'
+  ClientHeight = 586
+  ClientWidth = 838
+  OnClose = FormClose
+  object Panel1: TPanel
+    Left = 0
+    Height = 28
+    Top = 0
+    Width = 838
+    Align = alTop
+    BevelOuter = bvSpace
+    ClientHeight = 28
+    ClientWidth = 838
+    TabOrder = 0
+    object btnCenter: TBitBtn
+      Left = 3
+      Height = 25
+      Top = 1
+      Width = 25
+      Margin = 2
+      Images = ImageList1
+      ImageIndex = 0
+      OnClick = btnCenterClick
+      TabOrder = 0
+    end
+    object BitBtn1: TBitBtn
+      Left = 28
+      Height = 26
+      Top = 0
+      Width = 28
+      Margin = 3
+      Images = ImageList1
+      ImageIndex = 1
+      OnClick = BitBtn1Click
+      TabOrder = 1
+    end
+    object BitBtn2: TBitBtn
+      Left = 56
+      Height = 25
+      Top = 1
+      Width = 28
+      Margin = 3
+      Images = ImageList1
+      ImageIndex = 2
+      OnClick = BitBtn2Click
+      TabOrder = 2
+    end
+  end
+  object ScrollBox1: TScrollBox
+    Left = 0
+    Height = 558
+    Top = 28
+    Width = 838
+    HorzScrollBar.Page = 817
+    VertScrollBar.Page = 537
+    Align = alClient
+    ClientHeight = 537
+    ClientWidth = 817
+    TabOrder = 1
+    object img: TImage
+      Left = 0
+      Height = 558
+      Top = 0
+      Width = 834
+      OnMouseWheel = imgMouseWheel
+    end
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = '.bmp'
+    Left = 69
+    Top = 90
+  end
+  object ImageList1: TImageList
+    Left = 392
+    Top = 118
+    Bitmap = {
+      4C7A030000001000000010000000860100000000000078DA3B369FE1FF9555A4
+      E1FE6286FFAC2C0CFF1918207C100DC3E87C291186FF9921101A2407D237A914
+      620631FA4DB42062301A24063203C626473FB23A52DD4F48FF313CE1099223A4
+      9F588CAEFF1891F1087303BA7E62DD814BDFA8FE81D17F8C8CFC8B9E1691B18C
+      38C3FF606786FF497E101AC427C65D82BC0CFFFB8A18FE1F98C5F0BF359BE17F
+      61348406F17B0B21F2F8F46E9D08D1C3C6862A07E2174641E471990132BF200A
+      55CCC70E950F321BA40E9B7F416E6463C15F0E80DC0152871E1EA03002F91357
+      3C216390BA402754B1D44086FF791110768003F6B8028983E441EA40EAC9B63F
+      0BD37EB8FFD988F3BFB418A6B9DD859038C217FE75A90CFFA794638F3F011EFC
+      F15F9BC2F0FFF24A86FF679732FCB733C29D8640F10B4E7F59D0F49705E183EC
+      3DB714E2A77378CC404FFFA0B082F9D7C60068FF128819E79731FC773421BDCC
+      06D98BEC0E4B3DCACCC0159E84B0A52E44AF89E6F0CDFFE898D4FC8F8E49CDFF
+      D8303DF33F56FB49C8FFB8FC4F6CFE47C7A3F97F70E67F003C194382
+    }
+  end
+end

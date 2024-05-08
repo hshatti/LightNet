@@ -1,4 +1,4 @@
-unit image;
+unit imagedata;
 
 {$ifdef fpc}
   {$mode delphi}
@@ -882,7 +882,7 @@ begin
                 end
 end;
 
-function collapse_image_layers(const source: TImageData; const border: longint):TImageData;
+function collapse_image_layers(const source: TImageData; const border: longint): TImageData;
 var
     h, i, h_offset: longint;
     layer: TImageData;
@@ -1078,7 +1078,7 @@ end;
 
 function float_to_image(const w, h, c: longint; const data: TSingles):TImageData;
 begin
-    result := make_empty_image(w, h, c);
+    result := make_image(w, h, c);
     move(data[0],result.data[0], w* h* c * sizeof(single));
     //result.data := data;
 end;
@@ -1909,6 +1909,7 @@ end;
 
 
 const
+    colorMap1:array[0..0] of byte = (0);
   {$ifdef MSWINDOWS}
     colorMap3:array[0..2] of byte = (2,1,0);
     colorMap4:array[0..3] of byte = (2,1,0,3);
@@ -2245,8 +2246,9 @@ var
     i: longint;
 begin
     result := make_image(m.w, m.h, 1);
-    for i := 0 to m.h * m.w -1 do
-        result.data[i] := m.data[i+l * m.h * m.w];
+    move(m.data[l * m.h * m.w], result.data[0], m.w*m.h * sizeof(single));
+    //for i := 0 to m.h * m.w -1 do
+    //    result.data[i] := m.data[i+l * m.h * m.w];
 end;
 
 function bitmapToImage(const bmp:TBitmap):TImageData;
@@ -2372,6 +2374,8 @@ begin
     cm:=@colorMap4[0];
     if pf=pf24bit then
             cm:=@colorMap3[0];
+    if pf=pf8bit then
+        cm:=@colorMap1[0];
     if bmp=nil then bmp:=TBitmap.Create;
     c:=bmp.Canvas.Pixels[1,1];
     bmp.PixelFormat:=pf;
@@ -2421,8 +2425,7 @@ begin
     writeln('')
 end;
 
-function collapse_images_vert(const ims: TArray<TImageData>; const n: longint
-  ): TImageData;
+function collapse_images_vert(const ims: TArray<TImageData>; const n: longint): TImageData;
 var
     color:boolean;
     border, h, w, c, i, j, h_offset, w_offset: longint;

@@ -1,14 +1,14 @@
 object Form1: TForm1
-  Left = 468
+  Left = 436
   Height = 783
-  Top = 200
+  Top = 168
   Width = 1062
   Caption = 'Form1'
   ClientHeight = 783
   ClientWidth = 1062
   OnCreate = FormCreate
   OnShow = FormShow
-  LCLVersion = '2.2.6.0'
+  LCLVersion = '2.2.0.4'
   object Memo1: TMemo
     Left = 0
     Height = 66
@@ -58,9 +58,9 @@ object Form1: TForm1
     end
     object CheckBox1: TCheckBox
       Left = 16
-      Height = 24
+      Height = 21
       Top = 88
-      Width = 167
+      Width = 161
       Caption = 'Test OpenCV Camera'
       OnChange = CheckBox1Change
       TabOrder = 1
@@ -84,7 +84,7 @@ object Form1: TForm1
       TabOrder = 3
     end
     object TrackBar1: TTrackBar
-      Left = 48
+      Left = 47
       Height = 27
       Top = 144
       Width = 111
@@ -92,6 +92,8 @@ object Form1: TForm1
       OnChange = TrackBar1Change
       Position = 0
       TickStyle = tsNone
+      Color = 3487029
+      ParentColor = False
       TabOrder = 4
     end
     object TrackBar2: TTrackBar
@@ -103,6 +105,8 @@ object Form1: TForm1
       OnChange = TrackBar1Change
       Position = 0
       TickStyle = tsNone
+      Color = 3487029
+      ParentColor = False
       TabOrder = 5
     end
     object TrackBar3: TTrackBar
@@ -114,23 +118,23 @@ object Form1: TForm1
       OnChange = TrackBar1Change
       Position = 0
       TickStyle = tsNone
+      Color = 3487029
+      ParentColor = False
       TabOrder = 6
     end
     object Label1: TLabel
       Left = 4
       Height = 17
       Top = 144
-      Width = 26
+      Width = 25
       Caption = 'Red'
-      ParentColor = False
     end
     object Label2: TLabel
       Left = 4
       Height = 17
       Top = 169
-      Width = 40
+      Width = 39
       Caption = 'Green'
-      ParentColor = False
     end
     object Label3: TLabel
       Left = 4
@@ -138,25 +142,25 @@ object Form1: TForm1
       Top = 196
       Width = 29
       Caption = 'Blue'
-      ParentColor = False
     end
     object Label4: TLabel
       Left = 4
       Height = 17
       Top = 224
-      Width = 39
+      Width = 37
       Caption = 'Alpha'
-      ParentColor = False
     end
     object TrackBar4: TTrackBar
-      Left = 46
+      Left = 47
       Height = 27
       Top = 224
-      Width = 112
+      Width = 111
       Max = 255
       OnChange = TrackBar1Change
       Position = 0
       TickStyle = tsNone
+      Color = 3487029
+      ParentColor = False
       TabOrder = 7
     end
   end

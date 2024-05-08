@@ -11,9 +11,9 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
-  ComCtrls, math, TypInfo, StrUtils, lightnet, nnetwork, parser, cfg, data, image, box,
+  ComCtrls, math, TypInfo, StrUtils, lightnet, nnetwork, parser, cfg, data, imageData, uimgform,ConvolutionalLayer, box,
   steroids, OpenCLHelper
-  {$ifdef MSWINDOWS}
+  {$ifdef _MSWINDOWS}
   , opencv
   {$endif};
 
@@ -70,10 +70,16 @@ var
   l:PLayer;
   p:TSingles;
   n:longint;
+  norm:TImageData;
 begin
   l:=@net.layers[idx];
   write(#13,idx:4,' Detecting ... ',(100*idx/net.n):1:1,'%  - ', get_layer_string(l.&type),'                     ');
   Form1.Memo1.Lines[Form1.Memo1.lines.Count-1]:=format('%4d Detecting ... %.1f%% - %s',[idx,(100*idx/net.n), get_layer_string(l.&type)]);
+  //if l.&type=ltCONVOLUTIONAL then begin
+  //  norm:=get_convolutional_image(l^);
+  //  normalize_image2(norm);
+  //  TImgForm.ShowImage( collapse_image_layers(norm,1),true);
+  //end;
   Application.ProcessMessages;
   //if net.n-1 = idx then begin
   //    writeln(format('%d x %d x %d , outputs = %d , classes = %d', [l.w, l.h, l.n, l.outputs, l.classes]));
@@ -184,28 +190,31 @@ begin
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
-const fileN ='/home/jetson/LightNet/test.bmp';
+const fileN ='test.bmp';
 var bmp: TBitmap;
     bmp2: TBitmap;
   im:TImageData;
 begin
-  bmp:=TBitmap.Create();
-  bmp.PixelFormat:=pf32bit;
-  bmp.SetSize(600, 600);
-  bmp.Canvas.Lock;
-  bmp.canvas.brush.Color:=clRed;
-  bmp.canvas.pen.Color:=clBlue;
-  bmp.canvas.pen.Width:=4;
-  bmp.canvas.Ellipse(200,200,400,400);
-  bmp.Canvas.Unlock;
-  bmp.SaveToFile(fileN);
-  bmp.free;
+  if img.data=nil then
+      img:=make_image(600,600,4);
+  //bmp:=TBitmap.Create();
+  //bmp.PixelFormat:=pf32bit;
+  //bmp.SetSize(600, 600);
+  //bmp.Canvas.Lock;
+  //bmp.canvas.brush.Color:=clRed;
+  //bmp.canvas.pen.Color:=clBlue;
+  //bmp.canvas.pen.Width:=4;
+  //bmp.canvas.Ellipse(200,200,400,400);
+  //bmp.Canvas.Unlock;
+  //bmp.SaveToFile(fileN);
+  //bmp.free;
   //bmp2:=TBitmap.Create;
   //bmp2.LoadFromFile(fileN);
-  im:=load_image(fileN,0, 0, 0);
-  bmp2:=imageToBitmap(im);
-  bmp2.canvas.brush.color:=clRed;
-  bmp2.canvas.Ellipse(200,200,400,400);
+  //im:=load_image(fileN,0, 0, 0);
+
+  bmp2:=imageToBitmap(img);
+  //bmp2.canvas.brush.color:=clRed;
+  //bmp2.canvas.Ellipse(200,200,400,400);
   image1.Picture.Graphic:=bmp2;
   image1.Picture.Bitmap.canvas.TextOut(250,250,  GetEnumName(TypeInfo(TPixelFormat), ord(bmp2.PixelFormat)));
   bmp2.free
@@ -237,7 +246,7 @@ TPixel=record
   b,g,r:byte;
 end;
 
-{$ifdef MSWINDOWS}
+{$ifdef _MSWINDOWS}
 var
   cap:PCvCapture;
   im,im2:PIplImage;
@@ -250,7 +259,7 @@ procedure TForm1.CheckBox1Change(Sender: TObject);
   i:longint;
   bmp:Graphics.TBitmap;
 begin
-  {$ifdef MSWINDOWS}
+  {$ifdef _MSWINDOWS}
   if not CheckBox1.Checked then exit;
   cap:=nil;
   im:=nil;
@@ -327,7 +336,7 @@ begin
         end;
   end;
 render:
-  Image1.Picture.Graphic:=imageToBitmap(img, Image1.Picture.Bitmap);
+  Image1.Picture.Graphic:=imageToBitmap(img, TBitmap(Image1.Picture.Graphic));
 end;
 
 const max_iteration = 10000;
@@ -433,6 +442,7 @@ var i,j,k:IntPtr;
     a:array[0..255] of ansichar;
 initialization
   InitCriticalSection(semaphor);
+  exit;
   ocl := TOpenCL.create(dtALL);
   ocl.ActivePlatformId:=0;
   writeln(ocl.DevicesTypeStr);

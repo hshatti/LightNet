@@ -30,7 +30,7 @@ procedure update_deconvolutional_layer(const l: TDeConvolutionalLayer; const arg
 
 
 implementation
-uses image;
+uses imagedata;
 function deconvolutional_out_height(const l: TDeConvolutionalLayer):longint;
 begin
     result := l.stride * (l.h-1)+l.size;

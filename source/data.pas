@@ -12,7 +12,7 @@ unit data;
 interface
 
 uses
-  Classes, StrUtils, SysUtils, lightnet, image, blas, matrix, utils, steroids;
+  Classes, StrUtils, SysUtils, lightnet, imagedata, blas, matrix, utils, steroids;
 
 
 {$ifndef FPC}
