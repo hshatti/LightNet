@@ -25,9 +25,7 @@ uses classes, sysutils, col2im, lightnet
   , openblas
 {$elseif defined(MKL)}
   , mkl_cblas
-{$elseif defined(vDSP) and defined(DARWIN)}
-  {$Linkframework Accelerate}
-  ,vDSP
+{$else}
   {$define GEMM}
 {$endif}
 ;
@@ -536,9 +534,13 @@ asm
   imul               rax      , lda                           //  i * lda
   add                rax      , k                             //  i * lda + k
 
+{$ifdef UNIX}
+  vmulss             xmm3     , ALPHA  ,  dword [A + 4 * rax] // A[i * lda + k] * ALPHA
+  vbroadcastss       ymm3     , xmm3
+{$else}
   vmulss             xmm0     , ALPHA  ,  dword [A + 4 * rax] // A[i * lda + k] * ALPHA
   vbroadcastss       ymm0     , xmm0
-
+{$endif}
   add                rax      , lda                           //   (i+1)*lda + k
   vmulss             xmm1     , ALPHA  ,  dword [A + 4 * rax] // A[(i+1)*lda + k] * ALPHA
   vbroadcastss       ymm1     , xmm1
@@ -556,15 +558,23 @@ asm
   add                rax      , j                         // k * ldb + j
   vmovups            ymm6     , yword [B + 4 * rax]       // B[k * ldb + j]
   vmovups            ymm7     , yword [B + 4 * rax + 32]  // B[k * ldb + j+8]
-
-  vfmadd231ps        ymm8     , ymm0    , ymm6
-  //vmulps             ymm5     , ymm0    , ymm6
+{$ifdef UNIX}
+  vfmadd231ps        ymm8     , ymm3    , ymm6
+  //vmulps             ymm5     , ymm3    , ymm6
   //vaddps             ymm8     , ymm8    , ymm5
 
-  vfmadd231ps        ymm10    , ymm0    , ymm7
-  //vmulps             ymm5     , ymm0    , ymm7
+  vfmadd231ps        ymm10    , ymm3    , ymm7
+  //vmulps             ymm5     , ymm3    , ymm7
   //vaddps             ymm10    , ymm10   , ymm5
+{$else}
+vfmadd231ps        ymm8     , ymm0    , ymm6
+//vmulps             ymm5     , ymm0    , ymm6
+//vaddps             ymm8     , ymm8    , ymm5
 
+vfmadd231ps        ymm10    , ymm0    , ymm7
+//vmulps             ymm5     , ymm0    , ymm7
+//vaddps             ymm10    , ymm10   , ymm5
+{$endif}
   vfmadd231ps        ymm9     , ymm1    , ymm6
   //vmulps             ymm5     , ymm1    , ymm6
   //vaddps             ymm9     , ymm9    , ymm5
@@ -1042,30 +1052,19 @@ begin
             M, N, K, ALPHA, A, lda, B, ldb, BETA, C,ldc)
 {$else}
     if BETA<>1 then
-    {$if defined(vDSP) and defined(DARWIN)}
-    if ldc =1 then
-      vDSP_vsmul(C, ldc, @BETA, C, ldc ,M*N)
-    else
-        for i := 0 to M -1 do
-            vDSP_vsmul(C, ldc, @BETA, C, ldc ,N);
-    {$else}
+
       if ldc =1 then
         smulvs(C, BETA, ldc ,M*N)
       else
           for i := 0 to M -1 do
             smulvs(@C[i*ldc], BETA, ldc ,N);
-    {$endif}
             //for j := 0 to N -1 do
             //  C[i * ldc+j] := C[i * ldc+j] * BETA;
     if not boolean(TA) and not boolean(TB) then
         {$if defined(FPUAVX2)}
         gemm_nn_fast(M, N, K, ALPHA, A, lda, B, ldb, C, ldc)
         {$else}
-        {$if defined(vDSP) and defined(DARWIN)}
-        vDSP_mmul(A, lda, B, ldb, C, ldc, M ,N, K)
-        {$else}
         gemm_nn(M, N, K, ALPHA, A, lda, B, ldb, C, ldc)
-        {$endif}
         {$endif}
     else  if boolean(TA) and not boolean(TB) then
         gemm_tn(M, N, K, ALPHA, A, lda, B, ldb, C, ldc)

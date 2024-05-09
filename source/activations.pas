@@ -607,7 +607,7 @@ begin
   {$ifdef USE_TELEMETRY} if benchmark then metrics.act.finish(a);{$endif}
 end;
 
-  procedure swishMP(const f,t:PtrInt; const p:pointer=nil);
+  procedure swishMP(const f, t:PtrInt; const p:pointer);
   var
     i: longint;
     x_val, sigmoid: single;
@@ -618,10 +618,10 @@ end;
       output_sigmoid:=a.B;
       output := a.C;
 
-      //{$if defined(CPUX64) and defined(AVX2)}
-      //logistic_array(output_sigmoid+f, x+f, t-f+1);
-      //smulvv(output+f, x+f, output_sigmoid+f, t-f+1);
-      //{$else}
+      {$if defined(CPUX64) and defined(FPUAVX2)}
+      logistic_array(output_sigmoid+f, x+f, t-f+1);
+      smulvv(output+f, x+f, output_sigmoid+f, t-f+1);
+      {$else}
       for i := f to t do
         begin
             x_val := x[i];
@@ -629,7 +629,7 @@ end;
             output_sigmoid[i] := sigmoid;
             output[i] := x_val * sigmoid
         end
-      //{$endif}
+      {$endif}
   end;
 
 procedure activate_array_swish(const x: Psingle; const n: longint;

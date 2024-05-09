@@ -1241,7 +1241,7 @@ begin
   end;
 end;
 
-var hLib : {$ifdef MSWINDOWS}THandle {$else}Pointer{$endif};
+var hLib : {$if defined(MSWINDOWS) or defined(DARWIN) or defined(MACOS)}THandle {$else}Pointer{$endif};
 
 initialization
   {$if defined(MSWINDOWS)}
@@ -1394,7 +1394,6 @@ initialization
 {$endif}
 
 finalization
-
     {$if defined(MSWINDOWS)}
     if hLib<>0 then FreeLibrary(hLib);
     {$elseif not (defined(DARWIN) or defined(MACOS))}

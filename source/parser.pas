@@ -2977,7 +2977,7 @@ begin
             else
                 if not result.addOptionLine(line) then
                     begin
-                        writeln(ErrOutput, format('Config f error line %d, could parse: %s', [nu, line]));
+                        writeln(ErrOutput, format('Config file error line %d, could parse: %s', [nu, line]));
                         //free(line)
                     end
         end;

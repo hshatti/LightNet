@@ -14,145 +14,7 @@
       <Icon Value="0"/>
     </General>
     <BuildModes>
-      <Item Name="Debug" Default="True"/>
-      <Item Name="Release">
-        <CompilerOptions>
-          <Version Value="11"/>
-          <Target>
-            <Filename Value="../../lightnetTest.exe"/>
-          </Target>
-          <SearchPaths>
-            <IncludeFiles Value="../../source;$(ProjOutDir)"/>
-            <Libraries Value="../..;/opt/intel/oneapi/mkl/latest/lib/"/>
-            <OtherUnitFiles Value="../../source"/>
-            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
-          </SearchPaths>
-          <CodeGeneration>
-            <SmartLinkUnit Value="True"/>
-            <Optimizations>
-              <OptimizationLevel Value="4"/>
-            </Optimizations>
-          </CodeGeneration>
-          <Linking>
-            <Debugging>
-              <GenerateDebugInfo Value="False"/>
-              <RunWithoutDebug Value="True"/>
-              <DebugInfoType Value="dsDwarf3"/>
-              <UseLineInfoUnit Value="False"/>
-            </Debugging>
-            <LinkSmart Value="True"/>
-            <Options>
-              <Win32>
-                <GraphicApplication Value="True"/>
-              </Win32>
-            </Options>
-          </Linking>
-          <Other>
-            <CustomOptions Value="-OoFASTMATH
--OoLOOPUNROLL
--dUSE_MULTITHREADING
--dUSE_TELEMETRY
--dvDSP"/>
-            <OtherDefines Count="3">
-              <Define0 Value="USE_MULTITHREADING"/>
-              <Define1 Value="USE_TELEMETRY"/>
-              <Define2 Value="OPENBLAS"/>
-            </OtherDefines>
-          </Other>
-        </CompilerOptions>
-      </Item>
-      <Item Name="Jetson_DEBUG">
-        <CompilerOptions>
-          <Version Value="11"/>
-          <Target>
-            <Filename Value="../../lightnetTest"/>
-          </Target>
-          <SearchPaths>
-            <IncludeFiles Value="../../source"/>
-            <OtherUnitFiles Value="../../source"/>
-            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
-          </SearchPaths>
-          <Parsing>
-            <SyntaxOptions>
-              <IncludeAssertionCode Value="True"/>
-            </SyntaxOptions>
-          </Parsing>
-          <CodeGeneration>
-            <Checks>
-              <IOChecks Value="True"/>
-              <RangeChecks Value="True"/>
-              <OverflowChecks Value="True"/>
-              <StackChecks Value="True"/>
-            </Checks>
-            <VerifyObjMethodCallValidity Value="True"/>
-          </CodeGeneration>
-          <Linking>
-            <Debugging>
-              <DebugInfoType Value="dsDwarf2Set"/>
-              <UseHeaptrc Value="True"/>
-              <TrashVariables Value="True"/>
-              <UseExternalDbgSyms Value="True"/>
-            </Debugging>
-            <Options>
-              <Win32>
-                <GraphicApplication Value="True"/>
-              </Win32>
-            </Options>
-          </Linking>
-          <Other>
-            <CustomOptions Value="-dUSE_MULTITHREADING
--dUSE_TELEMETRY"/>
-            <OtherDefines Count="3">
-              <Define0 Value="OPENBLAS"/>
-              <Define1 Value="USE_MULTITHREADING"/>
-              <Define2 Value="USE_TELEMETRY"/>
-            </OtherDefines>
-          </Other>
-        </CompilerOptions>
-      </Item>
-      <Item Name="Jetson_RELEASE">
-        <CompilerOptions>
-          <Version Value="11"/>
-          <Target>
-            <Filename Value="../../lightnetTest"/>
-          </Target>
-          <SearchPaths>
-            <IncludeFiles Value="../../source"/>
-            <OtherUnitFiles Value="../../source"/>
-            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
-          </SearchPaths>
-          <CodeGeneration>
-            <SmartLinkUnit Value="True"/>
-            <Optimizations>
-              <OptimizationLevel Value="3"/>
-            </Optimizations>
-          </CodeGeneration>
-          <Linking>
-            <Debugging>
-              <GenerateDebugInfo Value="False"/>
-              <DebugInfoType Value="dsDwarf2Set"/>
-              <UseExternalDbgSyms Value="True"/>
-            </Debugging>
-            <LinkSmart Value="True"/>
-            <Options>
-              <Win32>
-                <GraphicApplication Value="True"/>
-              </Win32>
-            </Options>
-          </Linking>
-          <Other>
-            <CustomOptions Value="-OoFASTMATH
--OoLOOPUNROLL
--dUSE_MULTITHREADING
--dUSE_TELEMETRY"/>
-            <OtherDefines Count="3">
-              <Define0 Value="OPENBLAS"/>
-              <Define1 Value="USE_MULTITHREADING"/>
-              <Define2 Value="USE_TELEMETRY"/>
-            </OtherDefines>
-          </Other>
-        </CompilerOptions>
-      </Item>
+      <Item Name="Release" Default="True"/>
     </BuildModes>
     <PublishOptions>
       <Version Value="2"/>
@@ -172,19 +34,12 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="darknetTest"/>
       </Unit>
-      <Unit>
-        <Filename Value="../../source/uimgform.pas"/>
-        <IsPartOfProject Value="True"/>
-        <ComponentName Value="ImgForm"/>
-        <HasResources Value="True"/>
-        <ResourceBaseClass Value="Form"/>
-      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../lightnetTest.exe"/>
+      <Filename Value="../../lightnetTest"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="../../source"/>
@@ -193,25 +48,21 @@
     </SearchPaths>
     <Parsing>
       <SyntaxOptions>
-        <IncludeAssertionCode Value="True"/>
+        <SyntaxMode Value="Delphi"/>
       </SyntaxOptions>
     </Parsing>
     <CodeGeneration>
-      <Checks>
-        <IOChecks Value="True"/>
-        <RangeChecks Value="True"/>
-        <OverflowChecks Value="True"/>
-        <StackChecks Value="True"/>
-      </Checks>
-      <VerifyObjMethodCallValidity Value="True"/>
+      <SmartLinkUnit Value="True"/>
+      <Optimizations>
+        <OptimizationLevel Value="4"/>
+      </Optimizations>
     </CodeGeneration>
     <Linking>
       <Debugging>
-        <DebugInfoType Value="dsDwarf3"/>
-        <UseHeaptrc Value="True"/>
-        <TrashVariables Value="True"/>
-        <UseExternalDbgSyms Value="True"/>
+        <GenerateDebugInfo Value="False"/>
+        <DebugInfoType Value="dsDwarf2Set"/>
       </Debugging>
+      <LinkSmart Value="True"/>
       <Options>
         <Win32>
           <GraphicApplication Value="True"/>
@@ -219,10 +70,17 @@
       </Options>
     </Linking>
     <Other>
-      <CustomOptions Value="-OoFASTMATH
--OoLOOPUNROLL
+      <CustomOptions Value="-CfAVX2
+-dOPENBLAS
 -dUSE_MULTITHREADING
 -dUSE_TELEMETRY"/>
+      <OtherDefines Count="5">
+        <Define0 Value="USE_MULTITHREADING"/>
+        <Define1 Value="USE_TELEMETRY"/>
+        <Define2 Value="OPENBLAS"/>
+        <Define3 Value="MKL"/>
+        <Define4 Value="vDSP"/>
+      </OtherDefines>
     </Other>
   </CompilerOptions>
   <Debugging>

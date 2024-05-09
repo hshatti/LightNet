@@ -10,7 +10,9 @@ uses types;
   {$if defined(MSWINDOWS)}
     const libopenblas = 'libopenblas.dll' ;
   {$elseif defined(DARWIN)}
-    const libopenblas='libopenblas.dylib';
+    {$define static}
+    {$LinkFramework Accelerate}
+    //const libopenblas='libopenblas.dylib';
   {$else}
     const libopenblas='openblas.so.0' ;
   {$endif}

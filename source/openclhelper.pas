@@ -11,12 +11,16 @@ unit OpenCLHelper;
 interface
 
 uses
-  Classes, SysUtils, OpenCL ;
+  Classes, SysUtils, {$ifdef DARWIN}CL {$else} OpenCL{$endif} ;
 
 const
-  cInfoSize=$ffff;
+  cInfoSize=$7fff;
 
 type
+{$if not declared(size_t)}
+  psize_t = ^size_t;
+  size_t  = NativeUInt;
+{$endif}
 
   TCLDeviceType=(
     dtNone = 0 ,
@@ -178,6 +182,26 @@ type
     procedure CallKernel(const Index: integer; const dst: PLongWord; const a, b: integer);  overload;
 
   end;
+
+{$if not declared(clGetKernelArgInfo)}
+    cl_kernel_arg_info                         = cl_uint;
+
+  const
+    CL_KERNEL_ARG_ADDRESS_QUALIFIER = $1196;
+    CL_KERNEL_ARG_ACCESS_QUALIFIER  = $1197;
+    CL_KERNEL_ARG_TYPE_NAME         = $1198;
+    CL_KERNEL_ARG_TYPE_QUALIFIER    = $1199;
+    CL_KERNEL_ARG_NAME              = $119A;
+    CL_DEVICE_BUILT_IN_KERNELS      = $103f;
+    CL_DEVICE_HOST_UNIFIED_MEMORY   = $1035;
+
+  function clGetKernelArgInfo (kernel:cl_kernel;
+                     arg_indx:cl_uint;
+                     param_name:cl_kernel_arg_info;
+                     param_value_size:size_t;
+                     param_value:pointer;
+                     param_value_size_ret:psize_t):cl_int;winapi;external;
+{$endif}
 
 implementation
 
@@ -501,7 +525,7 @@ begin
     setLength(FKernels,FKernelCount);
     FErr:=clCreateKernelsInProgram(FProgram,FKernelCount,@FKernels[0],sz);CheckError;
     FErr:=clGetProgramBuildInfo(FProgram,FActiveDevice,CL_PROGRAM_BUILD_LOG,cInfoSize,@cinfo[0],N);CheckError;
-    FBuildLog:=copy(cinfo,0,N);
+    if N>1 then FBuildLog:=cinfo;
     FActiveKernelId:=-1;
     SetActiveKernelId(0);
     FIsBuilt:=True;
@@ -657,7 +681,7 @@ end;
 procedure TOpenCL.SetActiveDeviceId(AValue: integer);
 var wasBuilt:boolean; isShared:cl_bool;
 begin
-//  if FActiveDeviceId=AValue then Exit;
+  if FActiveDevice=FDevices[AValue] then Exit;
   if AValue>High(FDevices) then
     raise Exception.Create('Device index out of bounds!');
   wasBuilt:=FIsBuilt;
@@ -695,7 +719,7 @@ end;
 procedure TOpenCL.SetActivePlatformId(AValue: integer);
 var i:integer; dt:cl_device_type;
 begin
-  //if FActivePlatformId=AValue then Exit;
+  if FActivePlatform=FPlatforms[AValue] then Exit;
   if AValue>High(FPlatforms) then raise Exception.Create('Platform index out of bounds!');
   FActivePlatform:=FPlatforms[AValue];
   FErr:=clGetDeviceIDs(FActivePlatform,getCL_Device_Type(FDeviceType),0,nil,@FDeviceCount);  CheckError;
@@ -719,7 +743,6 @@ begin
     clReleaseContext(FContext);CheckError;
     FContext:=nil
   end;
-
   FContext:=clCreateContext(nil,FDeviceCount,@FDevices[0],nil,nil,FErr);CheckError;
   FActiveDeviceId:=-1;
   SetActiveDeviceId(0);

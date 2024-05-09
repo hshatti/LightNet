@@ -8,7 +8,7 @@ object Form1: TForm1
   ClientWidth = 1062
   OnCreate = FormCreate
   OnShow = FormShow
-  LCLVersion = '3.2.0.0'
+  LCLVersion = '2.2.6.0'
   object Memo1: TMemo
     Left = 0
     Height = 66
@@ -53,8 +53,8 @@ object Form1: TForm1
       Top = 8
       Width = 148
       Caption = 'Start Detecting Objects'
-      TabOrder = 0
       OnClick = Button1Click
+      TabOrder = 0
     end
     object CheckBox1: TCheckBox
       Left = 16
@@ -62,8 +62,8 @@ object Form1: TForm1
       Top = 88
       Width = 148
       Caption = 'Test OpenCV Camera'
-      TabOrder = 1
       OnChange = CheckBox1Change
+      TabOrder = 1
     end
     object Button3: TButton
       Left = 12
@@ -71,8 +71,8 @@ object Form1: TForm1
       Top = 44
       Width = 147
       Caption = 'Test OpenCL'
-      TabOrder = 2
       OnClick = Button3Click
+      TabOrder = 2
     end
     object Button2: TButton
       Left = 20
@@ -80,8 +80,8 @@ object Form1: TForm1
       Top = 352
       Width = 132
       Caption = 'Button2'
-      TabOrder = 3
       OnClick = Button2Click
+      TabOrder = 3
     end
     object TrackBar1: TTrackBar
       Left = 47
@@ -128,6 +128,7 @@ object Form1: TForm1
       Top = 144
       Width = 23
       Caption = 'Red'
+      ParentColor = False
     end
     object Label2: TLabel
       Left = 4
@@ -135,6 +136,7 @@ object Form1: TForm1
       Top = 169
       Width = 37
       Caption = 'Green'
+      ParentColor = False
     end
     object Label3: TLabel
       Left = 4
@@ -142,6 +144,7 @@ object Form1: TForm1
       Top = 196
       Width = 27
       Caption = 'Blue'
+      ParentColor = False
     end
     object Label4: TLabel
       Left = 4
@@ -149,6 +152,7 @@ object Form1: TForm1
       Top = 224
       Width = 34
       Caption = 'Alpha'
+      ParentColor = False
     end
     object TrackBar4: TTrackBar
       Left = 47

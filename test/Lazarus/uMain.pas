@@ -296,8 +296,8 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  //SetCurrentDir('');
   Memo1.Lines.Add('Current directory : ' + GetCurrentDir)
+
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -360,7 +360,7 @@ var semaphor :TCRITICALSECTION;
 {$endif}
 
 
-procedure Mandel(  y: PtrInt; ptr:Pointer);
+procedure Mandel(y: PtrInt; ptr:Pointer);
 const _max :single= 4.0;
 var
   x, iteration:integer;
@@ -371,6 +371,9 @@ var
   bmp:^Graphics.TBitmap absolute ptr;
 begin
 
+
+    //for y:=f to t do
+      begin
         d:=bmp.ScanLine[y];
         for x:=0 to bmp.width -1 do begin
             xx:=mapx(x/bmp.width);yy:=mapy(y/bmp.Height);
@@ -416,6 +419,7 @@ begin
             {$endif}
             end;
         end;
+      end;
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
@@ -427,33 +431,37 @@ begin
 
   bmp := Graphics.TBitmap.Create;
   bmp.PixelFormat:=pf32bit;
-  bmp.setSize(640, 640);
+  bmp.setSize(1600, 1600);
 
 
   b:=bmp.ScanLine[0];
   image1.Picture.Graphic:=bmp;
   bmp.BeginUpdate();
   t:=clock();
-  if false then begin
+  if true then begin
     ocl.SetParamElementSizes([bmp.height*bmp.Height*sizeof(longword), bmp.Width, bmp.Height]);
     ocl.SetGlobalWorkGroupSize(bmp.height, bmp.width);
-    ocl.SetLocalWorkGroupSize(2, 2);
-    ocl.CallKernel(1,bmp.scanline[0], bmp.width, bmp.Height);
+    ocl.SetLocalWorkGroupSize(8, 8);
+    ocl.CallKernel(0,bmp.scanline[0], bmp.width, bmp.Height);
   end
   else begin
     //for i:=0 to bmp.height-1 do Mandel(i , @bmp);
-    MP.&for(mandel, 0, bmp.Height, @bmp);
+    MP.&for(mandel, 0, bmp.Height-1, @bmp);
   end;
   bmp.EndUpdate();
   writeln((clock()-t)/1000000:3:3,'MS');
   Image1.Picture.Graphic:=bmp;
   bmp.Free
 end;
+
 var i,j,k:IntPtr;
     a:array[0..255] of ansichar;
+    wis:TWorkGroupSize;
 initialization
+  {$if defined(MACOS) or defined(DARWIN)}
+  SetCurrentDir(ExtractFilePath(ParamStr(0))+'../../../');
+  {$endif}
   InitCriticalSection(semaphor);
-  exit;
   ocl := TOpenCL.create(dtALL);
   ocl.ActivePlatformId:=0;
   writeln(ocl.DevicesTypeStr);
@@ -462,11 +470,13 @@ initialization
   for i:=0 to ocl.PlatformCount-1 do
     writeln(ifthen(i=ocl.ActivePlatformId,' *','  '),ocl.PlatformName(i));
 
-  ocl.ActiveDeviceId:=0;
+  ocl.ActiveDeviceId:=1;
   writeln(sLineBreak, sLineBreak,'Devices:');
   for i:=0 to ocl.DeviceCount-1 do
     writeln(ifthen(i=ocl.ActiveDeviceId,' *','  '),ocl.DeviceName(i),', ', ocl.CLDeviceDriver,' : ', ocl.CLDeviceVersion, ' Units :', ocl.ProcessorsCount,' @ ',ocl.ProcessorsFrequency,'Mhz ');
   writeln('');
+  wis := ocl.MaxWorkItemSizes;
+  writeln('MaxWorkItemSizes = ',wis[0],', ',wis[1],', ',wis[2],', ',#13#10'MaxWorkGroupSize = ', ocl.MaxWorkGroupSize);
   ocl.LoadFromFile(GetCurrentDir+'/source/cl_sgemm.c');
   writeln('Build :',ocl.Build);
   writeln(ocl.BuildLog, sLineBreak, sLineBreak, 'Kernels :', sLineBreak);
