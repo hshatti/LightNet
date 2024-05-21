@@ -342,7 +342,7 @@ type
   TMatrix = record
       rows : longint;
       cols : longint;
-      vals : array of TArray<Single>//TSingles2d;
+      vals : TArray<TArray<Single>>//TSingles2d;
       //vals : TArray<TSingles>;
     end;
 
@@ -354,7 +354,7 @@ type
       y : TMatrix;
       shallow : boolean;
       num_boxes : TIntegers;
-      boxes : PPbox;
+      boxes : PPBox;
     end;
 
   PLoadArgs = ^TLoadArgs;
@@ -634,8 +634,11 @@ const
       classes : longint;
       detection : longint;
       embedding_layer_id : longint;
+
+      // network boxes, yolo layer (l.batch * l.n * l.h * l.w * l.embeding_size) or (l.batch * outputs)
       embedding_output : TSingles;
       embedding_size : longint;
+
       sim_thresh : single;
       track_history_size : longint;
       dets_for_track : longint;
@@ -651,7 +654,10 @@ const
       reorg : longint;
       log : longint;
       tanh : boolean ;
+
+      // gaussian yolo, yolo ( size is : n)
       mask : TArray<longint>;
+
       total : longint;
       bflops : single;
       adam : longint;
@@ -696,40 +702,74 @@ const
       receptive_h : longint;
       receptive_w_scale : longint;
       receptive_h_scale : longint;
+
+      // convolutional ( if binary ), size is nweights
       cweights : TArray<byte>;//Pchar;
+
+      // maxpooling (if training) , size is : batch * out_c * out_h * out_w
       indexes : TArray<longint>;//Plongint;
+
+      // shortcut and route layers ( layers index number)
       input_layers : TArray<longint>;
+      //  shortcut Layers output sizes
       input_sizes : TArray<longint>;
+
+      // shortcut[Add vector) is : (number of layers to shortcut) * shortcuted layers outputs in each element
       layers_output : TArray<TSingles>;//TSingles2D;
       layers_delta : TArray<TSingles>;//TSingles2D;
+
       weights_type : TWeightsType;
       weights_normalization : TWeightsNormalization;
+
+      // yolo gausian yolo and region Layers , Map from a map file, size is number of lines
       map : TArray<longint>;
+
+      //iseg Layer, size is 90
       counts : TArray<longint>;
-      sums : TSingles2D;
+      sums : TSingles2D;  // 90 * ids
+
+      // dropout layer : inputs * batch
       rand : TSingles;
-      cost : TSingles;
+
+      cost : single;
+
+      // YOLO (batch n * h * w) & Softmax ( batch )
       labels : TArray<longint>;
+      // YOLO or SOFTMAX same as labels (batch n * h * w) & Softmax ( batch )
       class_ids : TArray<longint>;
+
       contrastive_neg_max : longint;
+
+      // contrastive, size is (l.batch * l.n * l.h * l.w)^2  // (note that it's squared)
       cos_sim : TSingles;
       exp_cos_sim : TSingles;
       p_constrastive : TSingles;
+
       contrast_p_gpu : PContrastiveParams;
+
+      // crnn( h * w * hidden_filters * batch * (steps+1)) | gru, lstm (outputs*batch) | rnn ( batch * hidden *(steps+1))
       state : TSingles;
       prev_state : TSingles;
+
+      // gru (outputs * batch)
       forgot_state : TSingles;
       forgot_delta : TSingles;
-      state_delta : TSingles;
-      combine_cpu : TSingles;
-      combine_delta_cpu : TSingles;
-      concat : TSingles;
-      concat_delta : TSingles;
+
+
+      //state_delta : TSingles;
+      //combine_cpu : TSingles;
+      //combine_delta_cpu : TSingles;
+      //concat : TSingles;
+      //concat_delta : TSingles;
+
+      // // convolutional ( if binary or xor ), size is : nweights
       binary_weights : TSingles;
+
       biases : TSingles;
       bias_updates : TSingles;
       scales : TSingles;
       scale_updates : TSingles;
+
       weights_ema : TSingles;
       biases_ema : TSingles;
       scales_ema : TSingles;
@@ -1105,9 +1145,9 @@ const
     workspace : TArray<Single>;
     train : boolean;
     index : longint;
-    cost : TSingles;
+    cost : single;
     clip : single;
-//{$ifdef GPU}
+{$ifdef GPU}
     delta_gpu : Psingle;
     output_gpu : Psingle;
     input_state_gpu : Psingle;
@@ -1127,11 +1167,11 @@ const
     global_delta_gpu : Psingle;
     state_delta_gpu : Psingle;
     max_delta_gpu_size : size_t;
+
+{$endif}
     optimized_memory : longint;
     dynamic_minibatch : longint;
-    workspace_size_limit : size_t;
-    onForward, onBackward :TProcProgress;
-//{$endif}
+    workspace_size_limit : size_t;    onForward, onBackward :TProcProgress;
   end;
 
 
@@ -1617,7 +1657,7 @@ begin
     //if assigned(l.layers_delta) then l.layers_delta.free;
     //if assigned(l.map) then l.map.free;
     if assigned(l.rand) then l.rand.free;
-    if assigned(l.cost) then l.cost.free;
+//    if assigned(l.cost) then l.cost.free;
     //if assigned(l.labels) and not l.detection then
     //    free(l.labels);
     //if assigned(l.class_ids) and not l.detection then
@@ -1630,9 +1670,9 @@ begin
     if assigned(l.prev_state)       then l.prev_state.free;
     if assigned(l.forgot_state)     then l.forgot_state.free;
     if assigned(l.forgot_delta)     then l.forgot_delta.free;
-    if assigned(l.state_delta)      then l.state_delta.free;
-    if assigned(l.concat)           then l.concat.free;
-    if assigned(l.concat_delta)     then l.concat_delta.free;
+    //if assigned(l.state_delta)      then l.state_delta.free;
+    //if assigned(l.concat)           then l.concat.free;
+    //if assigned(l.concat_delta)     then l.concat_delta.free;
     if assigned(l.binary_weights)   then l.binary_weights.free;
     if assigned(l.biases)           then l.biases.free;
     if assigned(l.bias_updates)     then l.bias_updates.free;

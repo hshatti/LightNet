@@ -52,7 +52,7 @@ begin
                 begin
                     group_size := hierarchy.group_size[i];
                     softmax(input+b * inputs + count, group_size, temp, output+b * inputs+count, 1);
-                    count := count + group_size
+                    inc(count , group_size)
                 end
         end
 end;
@@ -73,7 +73,7 @@ begin
     result.loss := TSingles.Create(inputs * batch);
     result.output := TSingles.Create(inputs * batch);
     result.delta := TSingles.Create(inputs * batch);
-    result.cost := TSingles.Create(1);
+//    result.cost := TSingles.Create(1);
 
     result.forward := forward_softmax_layer;
     result.backward := backward_softmax_layer;
@@ -98,7 +98,7 @@ begin
                 begin
                     group_size := l.softmax_tree[0].group_size[i];
                     softmax_cpu(net.input+count, group_size, l.batch, l.inputs, 1, 0, 1, l.temperature, l.output+count);
-                    count := count + group_size
+                    inc(count , group_size)
                 end
         end
     else
@@ -106,7 +106,7 @@ begin
     if assigned(net.truth) and not l.noloss then
         begin
             softmax_x_ent_cpu(l.batch * l.inputs, l.output, net.truth, l.delta, l.loss);
-            l.cost[0] := sum_array(l.loss, l.batch * l.inputs)
+            l.cost := sum_array(l.loss, l.batch * l.inputs)
         end
 end;
 
@@ -197,7 +197,7 @@ begin
     l.loss := TSingles.Create(1);
     l.output := TSingles.Create(inputs * batch);
     l.delta := TSingles.Create(inputs * batch);
-    l.cost := TSingles.Create(1);
+//    l.cost := TSingles.Create(1);
     step := l.batch * l.n * l.h * l.w;
     l.cos_sim := nil;
     l.exp_cos_sim := nil;
@@ -495,11 +495,11 @@ begin
     scal_cpu(l.inputs * l.batch, l.cls_normalizer, l.delta, 1);
     for i := 0 to l.inputs * l.batch -1 do
         l.delta[i] := clip_value(l.delta[i], l.max_delta);
-    l.cost[0] := sqr(mag_array(l.delta, l.inputs * l.batch){, 2});
+    l.cost := sqr(mag_array(l.delta, l.inputs * l.batch){, 2});
     if state.net.adversarial then
-        writeln(format(' adversarial contrastive loss = %f '#10'', [l.cost[0]]))
+        writeln(format(' adversarial contrastive loss = %f '#10'', [l.cost]))
     else
-        writeln(format(' contrastive loss = %f '#10'', [l.cost[0]]));
+        writeln(format(' contrastive loss = %f '#10'', [l.cost]));
     for b := 0 to l.batch -1 do
         for n := 0 to l.n -1 do
             for h := 0 to l.h -1 do

@@ -39,7 +39,7 @@ begin
     result.classes := classes;
     result.batch := batch;
     result.extra := ids;
-    result.cost := TSingles.Create(1);
+//    result.cost := TSingles.Create(1);
     result.outputs := h * w * result.c;
     result.inputs := result.outputs;
     result.truths := 90 * (result.w * result.h+1);
@@ -208,7 +208,7 @@ begin
                         l.delta[index] := l.delta[index] * 0.01
                     end
         end;
-    l.cost[0] := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
+    l.cost := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
     {$ifdef USE_TELEMETRY}
     if benchmark then metrics.forward.finish(l.&type);
     {$endif}

@@ -21,10 +21,8 @@ type
     private
       FOptions : TArray<string>;
       function tryFindKey(key:string; out val:string):boolean;
-      {$if FPC_RELEASE<2}
       procedure insert(const s:string; var Arr:TArray<string>; const position:IntPtr);
       procedure delete(var Arr:TArray<string>;const position, len:IntPtr);
-      {$endif}
     public
       typeName:string;
       procedure setOptions(str:string);
@@ -48,9 +46,7 @@ type
 
   TCFGList = record
     Sections : TArray<TCFGSection>;
-    {$if FPC_RELEASE<2}
-    procedure Insert(const s:TCFGSection; Arr:TArray<TCFGSection>; const position:IntPtr);
-    {$endif}
+    procedure Insert(const s:TCFGSection; var Arr:TArray<TCFGSection>; const position:IntPtr);
     function addSection(section:TCFGSection):PCFGSection;
     function isEmpty():boolean;
     function Count():longint;
@@ -72,7 +68,7 @@ begin
     val := trim(copy(FOptions[i],pos('=', FOptions[i])+1))
 end;
 
-{$if FPC_RELEASE<2}
+
 procedure TCFGSection.insert(const s: string; var Arr: TArray<string>;
   const position: IntPtr);
 var i:integer;
@@ -93,8 +89,6 @@ begin
     Arr[i]:=Arr[i+len];
   setLength(Arr,Length(arr)-len)
 end;
-
-{$endif}
 
 procedure TCFGSection.setOptions(str: string);
 var
@@ -119,7 +113,7 @@ end;
 
 function TCFGSection.getOptions(): string;
 begin
-  result:=(string).Join(sLineBreak, FOptions)
+  result:=string.Join(sLineBreak, FOptions)
 end;
 
 procedure TCFGSection.addOption(key, val: string);
@@ -252,8 +246,8 @@ begin
 end;
 
 { TCFGList }
-{$if FPC_RELEASE<2}
-procedure TCFGList.Insert(const s: TCFGSection; Arr: TArray<TCFGSection>;
+
+procedure TCFGList.Insert(const s: TCFGSection; var Arr: TArray<TCFGSection>;
   const position: IntPtr);
 var i:integer;
 begin
@@ -263,7 +257,6 @@ begin
   end;
   Arr[position]:=s
 end;
-{$endif}
 
 function TCFGList.addSection(section: TCFGSection): PCFGSection;
 begin

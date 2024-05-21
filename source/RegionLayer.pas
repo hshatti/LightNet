@@ -46,7 +46,7 @@ function logit(const x: single):single;
 function tisnan(const x: single):boolean;
 procedure forward_region_layer(var l: TRegionLayer; const state: PNetworkState);
 procedure backward_region_layer(var l: TRegionLayer; const state: PNetworkState);
-procedure get_region_boxes(const l: TRegionLayer; const w, h: longint; const thresh: single; const probs: TArray<TArray<Single>>; const boxes: TArray<TBox>; const only_objectness: boolean; const map: Plongint);
+procedure get_region_boxes(const l: PRegionLayer; const w, h: longint; const thresh: single; const probs: TArray<TArray<Single>>; const boxes: TArray<TBox>; const only_objectness: boolean; const map: Plongint);
 {$ifdef GPU}
 
 procedure forward_region_layer_gpu(const l: region_layer; state: network_state);
@@ -76,7 +76,7 @@ begin
     result.out_c := result.c;
     result.classes := classes;
     result.coords := coords;
-    result.cost := TSingles.Create(1);
+//    result.cost := TSingles.Create(1);
     result.biases := TSingles.Create(n * 2);
     result.bias_updates := TSingles.Create(n * 2);
     result.outputs := h * w * n * (classes+coords+1);
@@ -271,7 +271,7 @@ begin
     avg_anyobj := 0;
     count := 0;
     class_count := 0;
-    l.cost[0] := 0;
+    l.cost := 0;
     for b := 0 to l.batch -1 do  begin
             if assigned(l.softmax_tree) then begin
                 onlyclass_id := 0;
@@ -415,7 +415,7 @@ begin
     {$ifndef GPU}
     flatten(l.delta, l.w * l.h, size * l.n, l.batch, false);
     {$endif}
-    l.cost[0] := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
+    l.cost := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
 
     {$ifdef USE_TELEMETRY}
     if benchmark then metrics.forward.finish(l.&type);
@@ -429,8 +429,9 @@ begin
     axpy_cpu(l.batch * l.inputs, 1, l.delta, 1, state.delta, 1)
 end;
 
-procedure get_region_boxes(const l: TRegionLayer; const w, h: longint;
-  const thresh: single; const probs: TArray<TArray<Single>>; const boxes: TArray<TBox>; const only_objectness: boolean; const map: Plongint);
+procedure get_region_boxes(const l: PRegionLayer; const w, h: longint;
+  const thresh: single; const probs: TArray<TArray<Single>>; const boxes: TArray
+  <TBox>; const only_objectness: boolean; const map: Plongint);
 var
     i, j, n, row, col, index, p_index, box_index, class_index: longint;
     found :boolean;

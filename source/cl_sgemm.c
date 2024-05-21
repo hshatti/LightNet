@@ -45,7 +45,7 @@ __kernel void mandel(__global uchar *buf, const int w, const int h){
       iteration++;
   }
   if (iteration == max_iteration)
-//#if defined(__APPLE__)
+#if defined(__MACH__)
   {
       buf[x] = 0xff;
       buf[x+1] = 0;
@@ -59,40 +59,40 @@ __kernel void mandel(__global uchar *buf, const int w, const int h){
       buf[x+2] = c;
       buf[x+3] = c;
    }
-//#else
-//  {
-//      buf[x] = 0;
-//      buf[x+1] = 0;
-//      buf[x+2] = 0;
-//      buf[x+3] = 0xff;
-//  } else
-//  {
-//      uchar c = 0xff * log1p(coverageNum)/lnxp1_max_iteration;
-//      buf[x+0] = c;
-//      buf[x+1] = c;
-//      buf[x+2] = c;
-//      buf[x+3] = 0xff;
-//  }
-////#endif
+#else
+  {
+      buf[x] = 0;
+      buf[x+1] = 0;
+      buf[x+2] = 0;
+      buf[x+3] = 0xff;
+  } else
+  {
+      uchar c = 0xff * log1p(coverageNum)/lnxp1_max_iteration;
+      buf[x+0] = c;
+      buf[x+1] = c;
+      buf[x+2] = c;
+      buf[x+3] = 0xff;
+  }
+#endif
 }
 
 
-//__kernel void sgemm(
-//         long long M, long long N, long long K, float ALPHA,
-//         __global float *A, long long lda,
-//         __global float *B, long long ldb,
-//         __global float *C, long long ldc) {
+__kernel void sgemm(
+         long long M, long long N, long long K, float ALPHA,
+         __global float *A, long long lda,
+         __global float *B, long long ldb,
+         __global float *C, long long ldc) {
+
 //
-////
-////    for (int i = 0; i<M ; i++)
-////      for (int kk = 0 ; kk<K ; kk++) {
-//          int i,kk;
-//          i  = get_global_id(0);
-//          kk = get_global_id(1);
-//          float A_PART = ALPHA * A[i * lda + kk];
-//          for (int j=0 ; j<N; j++)
-//              C[i*ldc + j] += A_PART*B[kk*ldb + j];
-//      //}
-//
-//}
+//    for (int i = 0; i<M ; i++)
+//      for (int kk = 0 ; kk<K ; kk++) {
+          int i,kk;
+          i  = get_global_id(0);
+          kk = get_global_id(1);
+          float A_PART = ALPHA * A[i * lda + kk];
+          for (int j=0 ; j<N; j++)
+              C[i*ldc + j] += A_PART*B[kk*ldb + j];
+      //}
+
+}
 

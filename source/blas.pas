@@ -327,7 +327,7 @@ asm
 
 @while2:
     vmulss       xmm0      , xmm1   ,  dword ptr [src]
-    vmovss       [dst]     , xmm0
+    vmovss       dword[dst]     , xmm0
     add          src       , 4
     add          dst       , 4
 
@@ -366,9 +366,9 @@ asm
   jz           @done
 
 @while2:
-  vmovss       xmm1      , [src2]
+  vmovss       xmm1      , dword [src2]
   vmulss       xmm0      , xmm1   ,  dword ptr [src]
-  vmovss       [dst]     , xmm0
+  vmovss       dword [dst]     , xmm0
   add          src2      , 4
   add          src       , 4
   add          dst       , 4
@@ -408,7 +408,7 @@ asm
 
 @while2:
     vaddss       xmm0      , xmm1   ,  dword ptr [src]
-    vmovss       [dst]     , xmm0
+    vmovss       dword [dst]     , xmm0
     add          src       , 4
     add          dst       , 4
 
@@ -448,9 +448,9 @@ asm
   jz           @done
 
 @while2:
-  vmovss       xmm1      , [src2]
+  vmovss       xmm1      , dword [src2]
   vaddss       xmm0      , xmm1   ,  dword ptr [src]
-  vmovss       [dst]     , xmm0
+  vmovss       dword [dst]     , xmm0
   add          src2      , 4
   add          src       , 4
   add          dst       , 4
@@ -735,7 +735,7 @@ begin
   //transpose.free
 end;
 
-{$if defined(CPUX64) and defined(AVX2)}
+{$if defined(CPUX64) and defined(FPUAVX2)}
 procedure mov(const N:PtrInt; const src, dst);assembler;{$ifdef FPC}nostackframe;local;{$endif}
 asm
   {$ifndef FPC}
@@ -869,6 +869,13 @@ procedure scal_cpu(const N: longint; const ALPHA: single; const X: PSingle;
 var i:longint;
   o:PSingle;
 begin
+  {$if defined(CPUX64) and defined(FPUAVX2)}
+  if INCX=1 then begin
+      smulvs(X, X, ALPHA, N);
+      exit
+  end;
+  {$endif}
+
   for i := 0 to N-1 do begin
       o  := @X[i*INCX];
       o^ := o^ * ALPHA
@@ -906,7 +913,7 @@ asm
   and     N         ,  7
   jz      @done
 @while2:
-  vmovss  [x]       ,  xmm2
+  vmovss  dword [x]       ,  xmm2
   add     x         ,  4
   dec     N
   jnz     @while2
@@ -921,17 +928,18 @@ begin
 end;
 {$endif}
 
-  procedure fill1(const f,t:PtrInt; const p:pointer=nil);
+  procedure fill1(const f,t:PtrInt; const p:pointer=nil);inline;
   var a:PMPParams absolute p;
      ALPHA :PSingle;
      X:PSingle;
   begin
     ALPHA := a.A;
     X:=a.B;
-    sFill( x +f ,t-f+1,ALPHA^);
+    //sFill( x+f ,t-f+1,ALPHA^);
+    FillDWord(x[f], t-f+1, PLongWord(ALPHA)^)
   end;
 
-  procedure fill2(const f,t:PtrInt; const p:pointer=nil);
+  procedure fill2(const f,t:PtrInt; const p:pointer=nil);inline;
   var
      i:integer;
      a:PMPParams absolute p;
@@ -955,8 +963,7 @@ begin
 
   if incx=1 then begin
     {$ifdef USE_TELEMETRY} if benchmark then metrics.ops.start(opFill);{$endif}
-    //fill1(0,N-1)
-    {$if defined(_USE_MULTITHREADING)}
+    {$if defined(USE_MULTITHREADING)}
     mp.&For(fill1,0,N-1,@p);
     {$else}
     //fill1(0, N-1, @p);
@@ -967,7 +974,7 @@ begin
   else begin
     {$ifdef USE_TELEMETRY} if benchmark then metrics.ops.start(opIncFill);{$endif}
     //fill2(0,N-1)
-    {$if defined(_USE_MULTITHREADING)}
+    {$if defined(USE_MULTITHREADING)}
     mp.&For(fill2,0,N-1,@p);
     {$else}
     fill2(0, N-1, @p);
@@ -1014,6 +1021,7 @@ var i:longint;
   o:PSingle;
 begin
   {$ifdef USE_TELEMETRY} if benchmark then metrics.ops.start(opAxpy);{$endif}
+  // todo SIMDfy
   for i := 0 to N-1 do begin
       o := @Y[i*INCY];
       o^ := o^ + ALPHA*X[i*INCX];
@@ -1025,6 +1033,7 @@ function dot_cpu(const N: longint; const X: PSIngle; const INCX: longint;
   const Y: PSingle; const INCY: longint):single;
 var i:longint;
 begin
+  // todo SIMDfy
   result := 0;
   for i := 0 to N-1 do
       result := result + X[i*INCX] * Y[i*INCY];
@@ -1071,6 +1080,7 @@ end;
 procedure mult_add_into_cpu(const N: longint; const X, Y, Z: PSingle);
 var i:longint;
 begin
+  //todo SIMDfy
   for i := 0 to N-1 do
       Z[i] := Z[i] + X[i]*Y[i];
 end;
@@ -1106,6 +1116,7 @@ var
   i: Integer;
   o:PSingle;
 begin
+    // todo SIMDfy
   for i := 0 to N-1 do begin
     o  := @Y[i*INCY];
     o^ := o^ * X[i*INCX]
@@ -1115,6 +1126,7 @@ end;
 function sum_array(const a:PSingle; const n:longint):single;
 var i:longint;
 begin
+  // todo SIMDFy
     result := 0;
     for i := 0 to n-1 do
         result := result+ a[i];
@@ -1130,6 +1142,7 @@ procedure backward_bias(const bias_updates: PSingle; const delta: PSingle;
 var
     i, b: longint;
 begin
+    // todo simdfy
     for b := 0 to batch -1 do
         for i := 0 to n -1 do
             bias_updates[i] := bias_updates[i] + sum_array(delta+size * (i+b * n), size)
@@ -1463,6 +1476,7 @@ procedure l2normalize_cpu(const x, dx: PSingle; const batch, filters,
 var  b,f,i, index:longint;
     sum:single;
 begin
+  // todo simdfy
   for b := 0 to batch-1 do
       for i := 0 to spatial-1 do begin
           sum := 0;
@@ -1484,6 +1498,7 @@ procedure smooth_l1_cpu(const n: longint; const pred, truth, delta,
 var i:longint;
     diff,abs_val:single;
 begin
+  //todo simdfy
   for i := 0 to n-1 do begin
       diff := truth[i] - pred[i];
       abs_val := abs(diff);
@@ -1506,6 +1521,7 @@ procedure l2_cpu(const n: longint; const pred, truth, delta, error: PSingle);
 var i:longint;
     diff:single;
 begin
+  // todo simdfy
   for i := 0 to n-1 do begin
       diff := truth[i] - pred[i];
       error[i] := diff * diff;
@@ -1517,6 +1533,7 @@ procedure l1_cpu(const n: longint; const pred, truth, delta, error: PSingle);
 var i:longint;
     diff:single;
 begin
+  // todo simdfy
   for i := 0 to n-1 do begin
       diff := truth[i] - pred[i];
       error[i] := abs(diff);
@@ -1532,6 +1549,7 @@ procedure logistic_x_ent_cpu(const n: longint; const pred, truth, delta,
 var i:longint;
     t,p:single;
 begin
+  // todo simdfy
   for i := 0 to n-1 do begin
       t := truth[i];
       p := pred[i];
@@ -1545,6 +1563,7 @@ procedure softmax_x_ent_cpu(const n: longint; pred: PSingle; truth: PSingle;
 var i:longint;
     t,p :single;
 begin
+  //todo simdfy
   for i := 0 to n-1do begin
       t := truth[i];
       p := pred[i];
@@ -1568,14 +1587,21 @@ procedure weighted_sum_cpu(const a, b, s: PSingle; const n: longint;
   const c: PSingle);
 var  i:longint;
 begin
-  for  i := 0 to n-1 do
-      c[i] := s[i]*a[i] + (1-s[i])*ifthen(assigned(b) , b[i] , 0.0);
+  // todo simdfy
+  if assigned(b) then
+    for  i := 0 to n-1 do
+      c[i] := s[i]*a[i] + (1-s[i]) * b[i]
+  else
+    for  i := 0 to n-1 do
+      c[i] := s[i]*a[i]
+
 end;
 
 procedure weighted_delta_cpu(const a, b, s, da, db, ds: PSingle;
   const n: longint; const dc: PSingle);
 var i:longint;
 begin
+  // too simdfy
   for i := 0 to n-1 do begin
       if assigned(da) then da[i] := da[i] + dc[i] * s[i];
       if assigned(db) then db[i] := db[i] + dc[i] * (1-s[i]);
@@ -1600,79 +1626,79 @@ type
 
   end;
 
-  procedure shortThread(const f,t:PtrInt; const p:pointer);
-  var
-      id, src_id, src_i, src_b, i, weights_index, add_outputs, add_index, out_index: longint;
-      sum, max_val, w, eps: single; add:PSingle;
-      a:PSTParams absolute p;
-  begin
-      for id := f to t do
-          begin
-              src_id := id;
-              src_i := src_id mod a.src_outputs;
-              src_id := src_id div a.src_outputs;
-              src_b := src_id;
-              sum := 1; max_val := -MaxSingle;
-              if assigned(a.weights) and boolean(a.weights_normalization) then
-                  begin
-                      if a.weights_normalization = wnSOFTMAX_NORMALIZATION then
-                          for i := 0 to (a.n+1) -1 do
-                              begin
-                                  weights_index := src_i div a.step+i * a.layer_step;
-                                  w := a.weights[weights_index];
-                                  if max_val < w then
-                                      max_val := w
-                              end;
-                      eps := 0.0001;
-                      sum := eps;
-                      for i := 0 to (a.n+1) -1 do
-                          begin
-                              weights_index := src_i div a.step+i * a.layer_step;
-                              w := a.weights[weights_index];
-                              if a.weights_normalization = wnRELU_NORMALIZATION then
-                                  sum := sum + relu(w)
-                              else
-                                  if a.weights_normalization = wnSOFTMAX_NORMALIZATION then
-                                      sum := sum + exp(w-max_val)
-                          end
-                  end;
-              if assigned(a.weights) then
-                  begin
-                      w := a.weights[src_i div a.step];
-                      if a.weights_normalization = wnRELU_NORMALIZATION then
-                          w := relu(w) / sum
-                      else
-                          if a.weights_normalization = wnSOFTMAX_NORMALIZATION then
-                              w := exp(w-max_val) / sum;
-                      a.&out[id] := a.&in[id] * w
-                  end
-              else
-                  a.&out[id] := a.&in[id];
-              for i := 0 to a.n -1 do
-                  begin
-                      add_outputs := a.outputs_of_layers[i];
-                      if src_i < add_outputs then
-                          begin
-                              add_index := add_outputs * src_b+src_i;
-                              out_index := id;
-                              add := a.layers_output[i];
-                              if assigned(a.weights) then
-                                  begin
-                                      weights_index := src_i div a.step+(i+1) * a.layer_step;
-                                      w := a.weights[weights_index];
-                                      if a.weights_normalization = wnRELU_NORMALIZATION then
-                                          w := relu(w) / sum
-                                      else
-                                          if a.weights_normalization = wnSOFTMAX_NORMALIZATION then
-                                              w := exp(w-max_val) / sum;
-                                      a.&out[out_index] := a.&out[out_index] + (add[add_index] * w)
-                                  end
-                              else
-                                  a.&out[out_index] := a.&out[out_index] + add[add_index]
-                          end
-                  end
-          end;
-  end;
+procedure shortThread(const f,t:PtrInt; const p:pointer);
+var
+    id, src_id, src_i, src_b, i, weights_index, add_outputs, add_index, out_index: longint;
+    sum, max_val, w, eps: single; add:PSingle;
+    a:PSTParams absolute p;
+begin
+    for id := f to t do
+        begin
+            src_id := id;
+            src_i := src_id mod a.src_outputs;
+            src_id := src_id div a.src_outputs;
+            src_b := src_id;
+            sum := 1; max_val := -MaxSingle;
+            if assigned(a.weights) and boolean(a.weights_normalization) then
+                begin
+                    if a.weights_normalization = wnSOFTMAX_NORMALIZATION then
+                        for i := 0 to (a.n+1) -1 do
+                            begin
+                                weights_index := src_i div a.step+i * a.layer_step;
+                                w := a.weights[weights_index];
+                                if max_val < w then
+                                    max_val := w
+                            end;
+                    eps := 0.0001;
+                    sum := eps;
+                    for i := 0 to (a.n+1) -1 do
+                        begin
+                            weights_index := src_i div a.step+i * a.layer_step;
+                            w := a.weights[weights_index];
+                            if a.weights_normalization = wnRELU_NORMALIZATION then
+                                sum := sum + relu(w)
+                            else
+                                if a.weights_normalization = wnSOFTMAX_NORMALIZATION then
+                                    sum := sum + exp(w-max_val)
+                        end
+                end;
+            if assigned(a.weights) then
+                begin
+                    w := a.weights[src_i div a.step];
+                    if a.weights_normalization = wnRELU_NORMALIZATION then
+                        w := relu(w) / sum
+                    else
+                        if a.weights_normalization = wnSOFTMAX_NORMALIZATION then
+                            w := exp(w-max_val) / sum;
+                    a.&out[id] := a.&in[id] * w
+                end
+            else
+                a.&out[id] := a.&in[id];
+            for i := 0 to a.n -1 do
+                begin
+                    add_outputs := a.outputs_of_layers[i];
+                    if src_i < add_outputs then
+                        begin
+                            add_index := add_outputs * src_b+src_i;
+                            out_index := id;
+                            add := a.layers_output[i];
+                            if assigned(a.weights) then
+                                begin
+                                    weights_index := src_i div a.step+(i+1) * a.layer_step;
+                                    w := a.weights[weights_index];
+                                    if a.weights_normalization = wnRELU_NORMALIZATION then
+                                        w := relu(w) / sum
+                                    else
+                                        if a.weights_normalization = wnSOFTMAX_NORMALIZATION then
+                                            w := exp(w-max_val) / sum;
+                                    a.&out[out_index] := a.&out[out_index] + (add[add_index] * w)
+                                end
+                            else
+                                a.&out[out_index] := a.&out[out_index] + add[add_index]
+                        end
+                end
+        end;
+end;
 
 
 procedure shortcut_multilayer_cpu(size: longint; src_outputs: longint;

@@ -164,7 +164,7 @@ type
     function DeviceName(Index: integer): ansistring;
     function PlatformCount:integer;
     function DeviceCount:integer;
-    function Build:boolean;
+    function Build(const params:ansistring=''):boolean;
     property BuildLog:ansistring read FBuildLog;
     function KernelCount:integer;
     function KernelInfo(index:integer):TCLKernelInfo;
@@ -180,6 +180,7 @@ type
     procedure CallKernel(const Index: integer; const dst, a, b: PSingle; const bias:single;const c: integer); overload;
     procedure CallKernel(const Index: integer; const params: TArray<Pointer>);    overload;
     procedure CallKernel(const Index: integer; const dst: PLongWord; const a, b: integer);  overload;
+    class function Plaforms:cl_uint;static;
 
   end;
 
@@ -508,12 +509,12 @@ begin
   result:=FDeviceCount
 end;
 
-function TOpenCL.Build: boolean;
+function TOpenCL.Build(const params: ansistring): boolean;
 var src,par:PAnsiChar; sz:cl_uint;
 begin
   result:=False;
   src:=PAnsiChar(FProgramSource);
-  par:=PAnsiCHar('-cl-kernel-arg-info -cl-fast-relaxed-math -cl-mad-enable');
+  par:=PAnsiCHar('-cl-kernel-arg-info -cl-fast-relaxed-math -cl-mad-enable '+params);
   FProgram:=clCreateProgramWithSource(FContext,1,@src,nil,FErr);CheckError;
   FErr:=clBuildProgram(Fprogram,FDeviceCount,@FDevices[0],par,nil,nil);
   FErr:=clGetProgramBuildInfo(FProgram,FActiveDevice,CL_PROGRAM_BUILD_STATUS,cInfoSize,@FBuildStatus,N);CheckError;
@@ -652,6 +653,8 @@ procedure TOpenCL.CallKernel(const Index: integer; const dst: PLongWord;
   const a, b: integer);
 var ki:TCLKernelInfo;sz:size_t;i:integer;
 begin
+  if Index > high(FKernels) then
+    raise ERangeError.CreateFmt('Kernel [%d] out of Bounds : Number of Kernels = %d',[Index, length(FKernels)]);
   sz:=FGlobalWorkGroupSizes[0];
   for i:=1 to FWorkItemDimensions-1 do
     sz:=sz*FGlobalWorkGroupSizes[i];
@@ -666,6 +669,12 @@ begin
   //FErr:=clFinish(FQueue);
   FErr:=clReleaseMemObject(FCallParams[0]);CheckError;
 
+end;
+
+class function TOpenCL.Plaforms: cl_uint;
+
+begin
+    clGetPlatformIDs(0,nil,@result);
 end;
 
 //function TOpenCL.KernelArgs(index: integer): TCLKernelArgInfo;

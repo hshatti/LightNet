@@ -199,11 +199,11 @@ begin
 
     scale_add_bias(@l.output[0], @l.scales[0], @l.biases[0], l.batch, l.out_c, l.out_h * l.out_w);
 
+    //scale_bias(@l.output[0], @l.scales[0], l.batch, l.out_c, l.out_h * l.out_w);
+    //add_bias(@l.output[0], @l.biases[0], l.batch, l.out_c, l.out_h * l.out_w)
     {$ifdef USE_TELEMETRY}
     if benchmark then metrics.forward.finish(l.&type);
     {$endif}
-    //scale_bias(@l.output[0], @l.scales[0], l.batch, l.out_c, l.out_h * l.out_w);
-    //add_bias(@l.output[0], @l.biases[0], l.batch, l.out_c, l.out_h * l.out_w)
 end;
 
 procedure backward_batchnorm_layer(var l: TBatchNormLayer; const state: PNetworkState);

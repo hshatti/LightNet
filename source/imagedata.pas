@@ -29,15 +29,16 @@ function border_image(const a: TImageData; const border: longint):TImageData;
 function tile_images(const a, b: TImageData; const dx: longint):TImageData;
 function get_label(const characters: TArray<TArray<TImageData>>; const str: string; size: longint):TImageData;
 function get_label_v3(const characters: TArray<TArray<TImageData>>; const str: string; size: longint):TImageData;
+procedure draw_line(const a: TImageData; x1, y1, x2, y2: longint; const r, g, b: single; const alpha: single);
 procedure draw_label(const a: TImageData; r: longint; const c: longint; const _label: TImageData; const rgb: PSingle);
 procedure draw_weighted_label(const a: TImageData; r: longint; const c: longint; &label: TImageData; const rgb: PSingle; const alpha: single);
 procedure draw_box_bw(const a: TImageData; x1, y1, x2, y2: longint; const brightness: single);
 procedure draw_box_width_bw(const a: TImageData; const x1, y1, x2, y2, w: longint; const brightness: single);
-procedure draw_box(const a: TImageData; x1, y1, x2, y2: longint; const r, g, b: single);
-procedure draw_box_width(const a: TImageData; const x1, y1, x2, y2, w: longint; const r, g, b: single);
-procedure draw_bbox(const a: TImageData; const bbox: TBox; const w: longint; const r, g, b: single);
+procedure draw_box(const a: TImageData; x1, y1, x2, y2: longint; const r, g, b: single; const alpha: single=1.0);
+procedure draw_box_width(const a: TImageData; const x1, y1, x2, y2, w: longint; const r, g, b: single; const alpha:single=1.0);
+procedure draw_bbox(const a: TImageData; const bbox: TBox; const w: longint; const r, g, b: single; const alpha:single=1.0);
 function load_alphabet():TArray<TArray<TImageData>>;
-procedure draw_detections_v3(const im: TImageData; const dets: TArray<TDetection>; const num: longint; const thresh: single; const names: TArray<string>; const alphabet: TArray<TArray<TImageData>>; const classes, ext_output: longint);
+procedure draw_detections_v3(const im: TImageData; const dets: TArray<TDetection>; const num: longint; const thresh: single; const names: TArray<string>; const alphabet: TArray<TArray<TImageData>>; const classes: longint; labelAlpha:single =0.8; const ext_output: boolean=true);
 procedure draw_detections(const im: TImageData; const dets: TArray<TDetection>; const num: longint; const thresh: single; const names: TArray<string>; const alphabet: TArray<TArray<TImageData>>; const classes: longint);                     overload;
 procedure draw_detections(const im: TImageData; const num: longint; const thresh: single; const boxes: TArray<TBox>; probs: TArray<PSingle>; const names: TArray<string>; const alphabet: TArray<TArray<TImageData>>; const classes: longint);overload;
 procedure transpose_image(const im: TImageData);
@@ -56,7 +57,7 @@ procedure copy_image_into(const src, dest: TImageData);
 function copy_image(const p: TImageData):TImageData;
 procedure rgbgr_image(const im: TImageData);
 function show_image(const p: TImageData; const name: string; const ms: longint):longint;
-procedure save_image_options(const im: TImageData; const name: string; const f: TImType; const quality: longint);
+procedure save_image_options(const im: TImageData; const name: string; const f: TImType; const quality: longint=80);
 procedure save_image(im: TImageData; const name: string);
 procedure show_image_layers(const p: TImageData; const name: string);
 procedure show_image_collapsed(const p: TImageData; const name: string);
@@ -77,6 +78,8 @@ function best_3d_shift_r(const a: TImageData; const b: TImageData; const _min, _
 function best_3d_shift(const a, b: TImageData; const _min, _max: longint):longint;
 procedure composite_3d(const f1, f2: string; _out: string; const delta: longint);
 procedure letterbox_image_into(const im: TImageData; const w, h: longint; const boxed: TImageData);
+
+// Letterbox: new image placeing im in the middle on a gray background keeping aspect ration
 function letterbox_image(const im: TImageData; const w, h: longint):TImageData;
 function resize_max(const im: TImageData; const _max: longint):TImageData;
 function resize_min(const im: TImageData; const _min: longint):TImageData;
@@ -385,56 +388,149 @@ begin
         end
 end;
 
-
-procedure draw_box(const a: TImageData; x1, y1, x2, y2: longint; const r, g, b: single);
-var
-    i: longint;
+procedure swap(var a,b:single);  overload;
+var s:single;
 begin
-    if (x1 < 0) then
-        x1 := 0;
-    if (x1 >= a.w) then
-        x1 := a.w-1;
-    if x2 < 0 then
-        x2 := 0;
-    if x2 >= a.w then
-        x2 := a.w-1;
-    if y1 < 0 then
-        y1 := 0;
-    if y1 >= a.h then
-        y1 := a.h-1;
-    if y2 < 0 then
-        y2 := 0;
-    if y2 >= a.h then
-        y2 := a.h-1;
-    for i := x1 to x2 do
-        begin
-            a.data[i+y1 * a.w+0 * a.w * a.h] := r;
-            a.data[i+y2 * a.w+0 * a.w * a.h] := r;
-            a.data[i+y1 * a.w+1 * a.w * a.h] := g;
-            a.data[i+y2 * a.w+1 * a.w * a.h] := g;
-            a.data[i+y1 * a.w+2 * a.w * a.h] := b;
-            a.data[i+y2 * a.w+2 * a.w * a.h] := b
-        end;
-    for i := y1 to y2 do
-        begin
-            a.data[x1+i * a.w+0 * a.w * a.h] := r;
-            a.data[x2+i * a.w+0 * a.w * a.h] := r;
-            a.data[x1+i * a.w+1 * a.w * a.h] := g;
-            a.data[x2+i * a.w+1 * a.w * a.h] := g;
-            a.data[x1+i * a.w+2 * a.w * a.h] := b;
-            a.data[x2+i * a.w+2 * a.w * a.h] := b
-        end
+  s:=a;
+  a:=b;
+  b:=s
 end;
 
-procedure draw_box_width(const a: TImageData; const x1, y1, x2, y2, w: longint; const r, g, b: single);
+procedure swap(var a,b:longint); overload;
+var s:longint;
+begin
+  s:=a;
+  a:=b;
+  b:=s
+end;
+
+procedure draw_line(const a: TImageData; x1, y1, x2, y2: longint; const r, g, b: single; const alpha: single);
+var x, y, w, h, idx:  longint;
+    aspect, v: single;
+    ver, hor:boolean;
+    c: Integer;
+    rgb:array[0..2] of single;
+begin
+  rgb[0]:=r;rgb[1]:=g;rgb[2]:=b;
+  if x1>x2 then swap(x1,x2);
+  if y1>y2 then swap(x1,x2);
+  x1:=EnsureRange(x1,0, a.w-1);
+  y1:=EnsureRange(y1,0, a.h-1);
+  x2:=EnsureRange(x2,0, a.w-1);
+  y2:=EnsureRange(y2,0, a.h-1);
+
+  w := x2 - x1;
+  h := y2 - y1;
+  ver := w=0;
+  hor := h=0;
+
+
+  if  hor then begin
+    for c :=0 to 2 do
+      for x:=x1 to x2 do begin
+          idx :=c*a.h*a.w + y1*a.w + x;
+          v:= a.data[idx];
+          a.data[idx] := (rgb[c]-v)*alpha +v;
+      end;
+    exit
+  end;
+
+  if ver then begin
+    for c :=0 to 2 do
+      for y:=y1 to y2 do begin
+          idx :=c*a.h*a.w + y*a.w + x1;
+          v:= a.data[idx];
+          a.data[idx] := (rgb[c]-v)*alpha +v;
+      end;
+    exit
+  end;
+
+  aspect := h/w;
+  for c :=0 to 2 do
+    for x:=x1 to x2 do begin
+        y:= y1 + round((x-x1)*aspect);
+        idx :=c*a.h*a.h + y*a.w + x;
+        v:= a.data[idx];
+        a.data[idx] := (rgb[c]-v)*alpha +v;
+    end;
+
+end;
+
+procedure draw_box(const a: TImageData; x1, y1, x2, y2: longint; const r, g, b: single; const alpha: single);
+var
+    i, c: longint;
+    r1, g1, b1, r2, g2, b2:single;
+begin
+    if alpha =0 then exit;
+
+    draw_line(a, x1,y1,x2,y1, r, g, b, alpha);
+    draw_line(a, x1,y2,x2,y2, r, g, b, alpha);
+
+    draw_line(a, x1,y1,x1,y2, r, g, b, alpha);
+    draw_line(a, x2,y1,x2,y2, r, g, b, alpha);
+
+
+    //if (x1 < 0) then
+    //    x1 := 0;
+    //if (x1 >= a.w) then
+    //    x1 := a.w-1;
+    //if x2 < 0 then
+    //    x2 := 0;
+    //if x2 >= a.w then
+    //    x2 := a.w-1;
+    //if y1 < 0 then
+    //    y1 := 0;
+    //if y1 >= a.h then
+    //    y1 := a.h-1;
+    //if y2 < 0 then
+    //    y2 := 0;
+    //if y2 >= a.h then
+    //    y2 := a.h-1;
+    //for i := x1 to x2 do
+    //    begin
+    //        r1:=a.data[i+y1 * a.w+0 * a.w * a.h];
+    //        g1:=a.data[i+y1 * a.w+1 * a.w * a.h];
+    //        b1:=a.data[i+y1 * a.w+2 * a.w * a.h];
+    //        a.data[i+y1 * a.w+0 * a.w * a.h] := (r - r1)* alpha + r1 ;
+    //        a.data[i+y1 * a.w+1 * a.w * a.h] := (g - g1)* alpha + g1 ;
+    //        a.data[i+y1 * a.w+2 * a.w * a.h] := (b - b1)* alpha + b1 ;
+    //
+    //        r2:=a.data[i+y2 * a.w+0 * a.w * a.h];
+    //        g2:=a.data[i+y2 * a.w+1 * a.w * a.h];
+    //        b2:=a.data[i+y2 * a.w+2 * a.w * a.h];
+    //        a.data[i+y2 * a.w+0 * a.w * a.h] := (r - r2)* alpha + r2 ;
+    //        a.data[i+y2 * a.w+1 * a.w * a.h] := (g - g2)* alpha + g2 ;
+    //        a.data[i+y2 * a.w+2 * a.w * a.h] := (b - b2)* alpha + b2 ;
+    //    end;
+    //for i := y1 to y2 do
+    //    begin
+    //        r1:=a.data[x1+i * a.w+0 * a.w * a.h];
+    //        r2:=a.data[x2+i * a.w+0 * a.w * a.h];
+    //        g1:=a.data[x1+i * a.w+1 * a.w * a.h];
+    //        g2:=a.data[x2+i * a.w+1 * a.w * a.h];
+    //        b1:=a.data[x1+i * a.w+2 * a.w * a.h];
+    //        b2:=a.data[x2+i * a.w+2 * a.w * a.h];
+    //        a.data[x1+i * a.w+0 * a.w * a.h] := (r - r1)* alpha + r1 ;
+    //        a.data[x2+i * a.w+0 * a.w * a.h] := (r - r2)* alpha + r2 ;
+    //        a.data[x1+i * a.w+1 * a.w * a.h] := (g - g1)* alpha + g1 ;
+    //        a.data[x2+i * a.w+1 * a.w * a.h] := (g - g2)* alpha + g2 ;
+    //        a.data[x1+i * a.w+2 * a.w * a.h] := (b - b1)* alpha + b1 ;
+    //        a.data[x2+i * a.w+2 * a.w * a.h] := (b - b2)* alpha + b2 ;
+    //    end
+end;
+
+procedure draw_box_width(const a: TImageData; const x1, y1, x2, y2, w: longint;
+  const r, g, b: single; const alpha: single);
 var
     i: longint;
 begin
+    if alpha =0 then exit;
     for i := 0 to w -1 do
-        draw_box(a, x1+i, y1+i, x2-i, y2-i, r, g, b)
+        draw_box(a, x1+i, y1+i, x2-i, y2-i, r, g, b, alpha)
 end;
 
-procedure draw_bbox(const a: TImageData; const bbox: TBox; const w: longint; const r, g, b: single);
+procedure draw_bbox(const a: TImageData; const bbox: TBox; const w: longint;
+  const r, g, b: single; const alpha: single);
 var
     left, right, top, bot, i: longint;
 begin
@@ -443,7 +539,7 @@ begin
     top := trunc((bbox.y-bbox.h / 2) * a.h);
     bot := trunc((bbox.y+bbox.h / 2) * a.h);
     for i := 0 to w -1 do
-        draw_box(a, left+i, top+i, right-i, bot-i, r, g, b)
+        draw_box(a, left+i, top+i, right-i, bot-i, r, g, b, alpha)
 end;
 
 function load_alphabet():TArray<TArray<TImageData>>;
@@ -515,7 +611,10 @@ begin
     exit(ifthen(delta < 0, -1, ifthen(delta > 0, 1, 0)))
 end;
 
-procedure draw_detections_v3(const im: TImageData; const dets: TArray<TDetection>; const num: longint; const thresh: single; const names: TArray<string>; const alphabet: TArray<TArray<TImageData>>; const classes, ext_output: longint);
+procedure draw_detections_v3(const im: TImageData; const dets: TArray<TDetection
+  >; const num: longint; const thresh: single; const names: TArray<string>;
+  const alphabet: TArray<TArray<TImageData>>; const classes: longint;
+  labelAlpha: single; const ext_output: boolean);
 var
     frame_id, selected_detections_num, i, best_class, j, width, offset: longint;
     red, green, blue: single;
@@ -535,7 +634,7 @@ begin
         begin
             best_class := selected_detections[i].best_class;
             write(format('%s: %.0f%%', [names[best_class], selected_detections[i].det.prob[best_class] * 100]));
-            if ext_output<>0 then
+            if ext_output then
                 writeln(format(#9'(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)', [
                    (selected_detections[i].det.bbox.x-selected_detections[i].det.bbox.w / 2) * im.w,
                    (selected_detections[i].det.bbox.y-selected_detections[i].det.bbox.h / 2) * im.h,
@@ -547,7 +646,7 @@ begin
                 if (selected_detections[i].det.prob[j] > thresh) and (j <> best_class) then
                     begin
                         write(format('%s: %.0f%%', [names[j], selected_detections[i].det.prob[j] * 100]));
-                        if ext_output<>0 then
+                        if ext_output then
                             writeln(format(#9'(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)',[
                                  (selected_detections[i].det.bbox.x-selected_detections[i].det.bbox.w / 2) * im.w,
                                  (selected_detections[i].det.bbox.y-selected_detections[i].det.bbox.h / 2) * im.h,
@@ -560,7 +659,7 @@ begin
     TTools<TDetectionWithClass>.QuickSort(selected_detections, 0, selected_detections_num-1, compare_by_probs);
     for i := 0 to selected_detections_num -1 do
         begin
-            width := trunc(im.h * 0.002);
+            width := trunc(im.h * 0.004);
             if width < 1 then
                 width := 1;
             offset := selected_detections[i].best_class * 123457 mod classes;
@@ -586,7 +685,7 @@ begin
             if im.c = 1 then
                 draw_box_width_bw(im, left, top, right, bot, width, 0.8)
             else
-                draw_box_width(im, left, top, right, bot, width, red, green, blue);
+                draw_box_width(im, left, top, right, bot, width, red, green, blue, labelAlpha);
             if assigned(alphabet) then
                 begin
                     labelstr:='';
@@ -597,7 +696,7 @@ begin
                         if (selected_detections[i].det.prob[j] > thresh) and (j <> selected_detections[i].best_class) then
                                 labelstr := labelstr + ', ' + names[j];
                     &label := get_label_v3(alphabet, labelstr, trunc(im.h * 0.02));
-                    draw_weighted_label(im, top+width, left, &label, @rgb[0], 0.7);
+                    draw_weighted_label(im, top + width, left, &label, @rgb[0], labelAlpha);
                     free_image(&label)
                 end;
             if assigned(selected_detections[i].det.mask) then
@@ -1780,15 +1879,15 @@ function make_attention_image(const img_size: longint;
   const original_delta_cpu, original_input_cpu: TArray<single>;
   w: longint; h: longint; c: longint; alpha: single): TImageData;
 var
-    attention_img, resized: TImageData;
+    resized: TImageData;
     k: longint;
     min_val, mean_val, max_val, range, val: single;
 begin
-    attention_img.w := w;
-    attention_img.h := h;
-    attention_img.c := c;
-    attention_img.data := original_delta_cpu;
-    make_image_red(attention_img);
+    result.w := w;
+    result.h := h;
+    result.c := c;
+    result.data := original_delta_cpu;
+    make_image_red(result);
     min_val := 999999; mean_val := 0; max_val := -999999;
     for k := 0 to img_size -1 do
         begin
@@ -1806,12 +1905,12 @@ begin
             val := abs(mean_val-val) / range;
             original_delta_cpu[k] := val * 4
         end;
-    resized := resize_image(attention_img, w div 4, h div 4);
-    attention_img := resize_image(resized, w, h);
+    resized := resize_image(result, w div 4, h div 4);
+    result := resize_image(resized, w, h);
     free_image(resized);
     for k := 0 to img_size -1 do
-        attention_img.data[k] := attention_img.data[k] * alpha+(1-alpha) * original_input_cpu[k];
-    exit(attention_img)
+        result.data[k] := result.data[k] * alpha+(1-alpha) * original_input_cpu[k];
+    exit(result)
 end;
 
 

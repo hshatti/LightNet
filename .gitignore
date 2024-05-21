@@ -17,6 +17,7 @@ lib/
 *.xml
 *.lps
 *.weights
+link*.res
 lightnetTest
 darknetTest
 build.bat
@@ -34,3 +35,8 @@ __*/
 *.rsm
 *.identcache
 *.local
+
+
+# misc
+*.rar
+*.zip

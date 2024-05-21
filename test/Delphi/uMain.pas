@@ -9,9 +9,9 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
-  FMX.Controls.Presentation, FMX.StdCtrls,
+  FMX.Controls.Presentation, FMX.StdCtrls, threading,
   FMX.Memo.Types, FMX.Objects, FMX.ScrollBox, FMX.Memo, TypInfo
-  , lightnet, image, cfg, box, nnetwork, parser, data
+  , lightnet, imagedata, cfg, box, nnetwork, parser, data , gemm, ntensors
   , openclhelper ;
 
 type
@@ -129,7 +129,7 @@ begin
           do_nms_sort(dets, nboxes, l.classes, nms);
 
       writeln(format('  thersh[%.2f] Detections [%d]', [thresh, Length(dets)]));
-      draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 1);
+      draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes,0.5);
         System.SysUtils.DeleteFile(string(input+'1.jpg'));
       save_image(im, input+'1');
       if FileExists(input+'1.jpg') then
@@ -224,13 +224,13 @@ var
   c:byte;
   x0, xx, y0, yy, xtemp, diffTolast, diffToMax, coverageNum, currentAbs, oldAbs:single;
   d:PByte;
-  bmp:^TBitmapData absolute p;
+  data:^TBitmapData absolute p;
 begin
     //y := f;
     //for y:=f to t do begin
-        d:=bmp.GetScanLine(y);
-        for x:=0 to bmp.width -1 do begin
-            xx:=mapx(x/bmp.width);yy:=mapy(y/bmp.width);
+        d:=data.GetScanLine(y);
+        for x:=0 to data.width -1 do begin
+            xx:=mapx(x/data.width);yy:=mapy(y/data.width);
             x0:=0.0;y0:=0.0;
             iteration:=0;
             oldabs:=0;
@@ -266,25 +266,75 @@ begin
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
+const _max :single= 4.0;
 var
   bmp:FMX.Graphics.TBitmap;
   data:TBitmapData;
   t : int64;
 begin
+
+
   lnxp1_max_iteration := Ln(1+max_iteration);
   bmp := FMX.Graphics.TBitmap.Create;
   bmp.setSize(1600, 1600);
   bmp.map(TMapAccess.Write, data);
   t:=clock();
 //  Mandel(0, data.Height-1 , @data);
-  if True then begin
+  if true then begin
       ocl.SetParamElementSizes([bmp.height*bmp.Height*sizeof(longword), bmp.Width, bmp.Height]);
       ocl.SetGlobalWorkGroupSize(bmp.height, bmp.width);
       ocl.SetLocalWorkGroupSize(8, 8);
-      ocl.CallKernel(1,data.GetScanline(0), bmp.width, bmp.Height);
+      ocl.CallKernel(0, data.GetScanline(0), bmp.width, bmp.Height);
   end
   else begin
-      MP.&for(mandel,0, Data.Height, @data);
+      MP.&for(
+      procedure (y: IntPtr;   p:Pointer)
+      var
+        x, iteration:integer;
+        //y : integer;
+        c:byte;
+        x0, xx, y0, yy, xtemp, diffTolast, diffToMax, coverageNum, currentAbs, oldAbs:single;
+        d:PByte;
+      begin
+          //y := f;
+          //for y:=f to t do begin
+              d:=data.GetScanLine(y);
+              for x:=0 to data.width -1 do begin
+                  xx:=mapx(x/data.width);yy:=mapy(y/data.width);
+                  x0:=0.0;y0:=0.0;
+                  iteration:=0;
+                  oldabs:=0;
+                  coverageNum := max_iteration;
+                  while iteration < max_iteration do begin
+                      xtemp := x0*x0 - y0*y0;
+                      y0 := 2*x0*y0;
+                      x0 := xtemp;
+                      x0:=x0+xx;
+                      y0:=y0+yy;
+                      currentAbs:=x0*x0+y0*y0;
+                      if currentabs>4 then begin
+                         difftoLast  := currentAbs - oldAbs;
+                         diffToMax   :=       _max - oldAbs;
+                         coverageNum := iteration + difftoMax/difftoLast;
+                         break
+                      end;
+                      oldAbs:=currentAbs;
+                      inc(iteration);
+                  end;
+                  if iteration=max_iteration then begin
+                      PLongWord(@d[x*4])^ := $ff000000;
+                  end else
+                  begin
+                      c := trunc($ff * ln(1+coverageNum)/lnxp1_max_iteration);
+                      d[x*4+0] := c;
+                      d[x*4+1] := c;
+                      d[x*4+2] := c;
+                      d[x*4+3] := $ff
+                  end;
+              end;
+          //end;
+      end
+      ,0, Data.Height);
   end;
   writeln((clock()-t)/1000000:3:3,'MS');
   bmp.Unmap(Data);

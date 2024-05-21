@@ -17,6 +17,7 @@ unit gemm;
 
 interface
 uses classes, sysutils, col2im, lightnet
+
   , steroids
 {$if defined(CLBLAST)}
     , cl
@@ -184,9 +185,9 @@ procedure sgemm(const TA, TB, M, N, K:PtrInt;
              const BETA:single; const C:PSingle; const ldc:PtrInt);
 
 {$ifdef GEMM}
-{$if defined(CPUX64) and defined(AVX2)}
+  {$if defined(CPUX64) and defined(FPUAVX2)}
 procedure smulvs(const x: PSingle; const a:single; const INCX, count:PtrInt);
-{$endif}
+  {$endif}
 {$endif}
 {$ifdef GPU}
 procedure gemm_gpu(const TA, TB, M, N, K:longint;
@@ -315,7 +316,7 @@ asm
 
 @while2:
   vmulss       xmm0      , xmm1   ,  dword ptr [x]
-  vmovss       [x]       , xmm0
+  vmovss       dword [x]       , xmm0
   add          x         , 4
 
   dec          r11
@@ -338,7 +339,7 @@ end;
 {$endif}
 
 
-{$if defined(CPUX64) and defined(AVX2)}
+{$if defined(CPUX64) and defined(FPUAVX2)}
 procedure sxpay(const x, y: PSingle; const a: Single; const count: PtrInt);assembler;{$ifdef FPC}nostackframe;{$endif}
 asm
   //push         r11
@@ -454,9 +455,9 @@ asm
   jz           @done
 
 @while2:
-  vmovss       xmm0   , [x]
+  vmovss       xmm0   , dword [x]
   vfmadd231ss  xmm0   , xmm2, [y]
-  vmovss       [x]    , xmm0
+  vmovss       dword [x]    , xmm0
   add          x      , 4
   add          y      , 4
   dec          r11
@@ -482,7 +483,7 @@ const TILE_N = 16 ;  // AVX 2 operations * 8 (8 singles);
 const TILE_K = 16 ;  // loops
 
 {$if defined(CPUX64) and defined(FPUAVX2)}
-procedure nn_fast(const A, B, C:PSingle; const ALPHA:single; const lda, ldb, ldc, i, j, k:PtrInt);assembler;
+procedure nn_fast(const A, B, C:PSingle; const ALPHA:single; const lda, ldb, ldc, i, CN, k:PtrInt);assembler;local;
 asm
 // save non-volatile registers to stack
   push               r12
@@ -503,9 +504,12 @@ asm
   vmovdqu              [rsp+$90], xmm15
 {$endif}
 
+  xor                r10      , r10
+  //mov                r10      , CN
+@while_n:
   mov                r11      , i
   imul               r11      , ldc
-  add                r11      , j                         // (i*0)*ldc + j
+  add                r11      , r10                       // (i*0)*ldc + j
   mov                r12      , r11
   add                r11      , ldc                       // (1+i)*ldc + j
   mov                r13      , r11
@@ -526,15 +530,16 @@ asm
   vmovups            ymm13    , yword [C + 4 * r15]       // C[(3+i)*ldc + j]
   vmovups            ymm15    , yword [C + 4 * r15 + 32]  // C[(3+i)*ldc + j+8]
 
-  mov                r11      , TILE_K
+  xor                r11      , r11
 
 @while:
 
   mov                rax      , i
   imul               rax      , lda                           //  i * lda
   add                rax      , k                             //  i * lda + k
+  add                rax      , r11
 
-{$ifdef UNIX}
+{$if defined(UNIX) or defined(POSIX)}
   vmulss             xmm3     , ALPHA  ,  dword [A + 4 * rax] // A[i * lda + k] * ALPHA
   vbroadcastss       ymm3     , xmm3
 {$else}
@@ -554,11 +559,12 @@ asm
   vbroadcastss       ymm4     , xmm4
 
   mov                rax      , k
+  add                rax      , r11
   imul               rax      , ldb                       // k * ldb
-  add                rax      , j                         // k * ldb + j
+  add                rax      , r10                       // k * ldb + j
   vmovups            ymm6     , yword [B + 4 * rax]       // B[k * ldb + j]
   vmovups            ymm7     , yword [B + 4 * rax + 32]  // B[k * ldb + j+8]
-{$ifdef UNIX}
+{$if defined(UNIX) or defined(POSIX)}
   vfmadd231ps        ymm8     , ymm3    , ymm6
   //vmulps             ymm5     , ymm3    , ymm6
   //vaddps             ymm8     , ymm8    , ymm5
@@ -567,14 +573,14 @@ asm
   //vmulps             ymm5     , ymm3    , ymm7
   //vaddps             ymm10    , ymm10   , ymm5
 {$else}
-vfmadd231ps        ymm8     , ymm0    , ymm6
-//vmulps             ymm5     , ymm0    , ymm6
-//vaddps             ymm8     , ymm8    , ymm5
+  vfmadd231ps        ymm8     , ymm0    , ymm6
+  //vmulps             ymm5     , ymm0    , ymm6
+  //vaddps             ymm8     , ymm8    , ymm5
 
-vfmadd231ps        ymm10    , ymm0    , ymm7
-//vmulps             ymm5     , ymm0    , ymm7
-//vaddps             ymm10    , ymm10   , ymm5
-{$endif}
+  vfmadd231ps        ymm10    , ymm0    , ymm7
+  //vmulps             ymm5     , ymm0    , ymm7
+  //vaddps             ymm10    , ymm10   , ymm5
+  {$endif}
   vfmadd231ps        ymm9     , ymm1    , ymm6
   //vmulps             ymm5     , ymm1    , ymm6
   //vaddps             ymm9     , ymm9    , ymm5
@@ -600,14 +606,9 @@ vfmadd231ps        ymm10    , ymm0    , ymm7
   //vmulps             ymm5     , ymm4    , ymm7
   //vaddps             ymm15    , ymm15   , ymm5
 
-  add                A        , 4       // sizeof(single)
-
-  mov                rax      , ldb
-  imul               rax      , 4       // sizeof(single)
-  add                B        , rax
-
-  dec                r11
-  jnz                @while
+  inc                r11
+  cmp                r11      , TILE_K
+  jl                 @while
 
   vmovups            yword [C + 4 * r12]      , ymm8   // C[(0+i)*ldc + j]
   vmovups            yword [C + 4 * r12 + 32] , ymm10  // C[(0+i)*ldc + j+8]
@@ -617,20 +618,22 @@ vfmadd231ps        ymm10    , ymm0    , ymm7
   vmovups            yword [C + 4 * r14 + 32] , ymm14  // C[(2+i)*ldc + j+8]
   vmovups            yword [C + 4 * r15]      , ymm13  // C[(3+i)*ldc + j]
   vmovups            yword [C + 4 * r15 + 32] , ymm15  // C[(3+i)*ldc + j+8]
-
+  add                r10    , TILE_N
+  cmp                r10    , CN
+  jl                 @while_n
 //restore non-volatile registers
 {$ifdef MSWINDOWS}
-  vmovdqu              xmm6   , [rsp+$00]
-  vmovdqu              xmm7   , [rsp+$10]
-  vmovdqu              xmm8   , [rsp+$20]
-  vmovdqu              xmm9   , [rsp+$30]
-  vmovdqu              xmm10  , [rsp+$40]
-  vmovdqu              xmm11  , [rsp+$50]
-  vmovdqu              xmm12  , [rsp+$60]
-  vmovdqu              xmm13  , [rsp+$70]
-  vmovdqu              xmm14  , [rsp+$80]
-  vmovdqu              xmm15  , [rsp+$90]
-  add                  rsp     , 16*10
+  vmovdqu            xmm6   , [rsp+$00]
+  vmovdqu            xmm7   , [rsp+$10]
+  vmovdqu            xmm8   , [rsp+$20]
+  vmovdqu            xmm9   , [rsp+$30]
+  vmovdqu            xmm10  , [rsp+$40]
+  vmovdqu            xmm11  , [rsp+$50]
+  vmovdqu            xmm12  , [rsp+$60]
+  vmovdqu            xmm13  , [rsp+$70]
+  vmovdqu            xmm14  , [rsp+$80]
+  vmovdqu            xmm15  , [rsp+$90]
+  add                rsp     , 16*10
 {$endif}
   pop r15
   pop r14
@@ -647,8 +650,8 @@ var
   p:PMPParams absolute ptr;
   A, B, C:PSingle;
   lda, ldb, ldc,
-  RN
-  ,RK, RM
+  CN
+  ,CK, CM
   ,N
   ,K
    :PtrInt;
@@ -661,51 +664,46 @@ begin
   ldb   := PPtrInt(p.e)^;
   ldc   := PPtrInt(p.f)^;
   ALPHA := PSingle(p.g)^;
-  RK    := PPtrInt(p.h)^;
-  RN    := PPtrInt(p.i)^;
+  CK    := PPtrInt(p.h)^;
+  CN    := PPtrInt(p.i)^;
   N     := PPtrInt(p.j)^;
   K     := PPtrInt(p.k)^;
 
   kk    :=0;
-  while kk < RK do begin
-      j:=0;
-      while j < RN do begin
-          nn_fast(A, B, C, ALPHA, lda, ldb, ldc,idx, j, kk);
-          inc(j, TILE_N)
-      end;
-
+  while kk < CK do begin
+      nn_fast(A, B, C, ALPHA, lda, ldb, ldc,idx, CN, kk);
       for i_d:=idx to idx+TILE_M -1 do
           for k_d:=kk to kk + TILE_K-1 do begin
               A_PART := ALPHA*A[i_d*lda + k_d];
-              sxpay(@C[i_d*ldc + RN], @B[k_d*ldb + RN], A_PART, N-RN);
-//              for j:= (N div TILE_N)*TILE_N to N-1 do
-//                  C[i_d*ldc + j] := C[i_d*ldc + j] + A_PART*B[k_d*ldb + j];
+              sxpay(@C[i_d*ldc + CN], @B[k_d*ldb + CN], A_PART, N-CN);
+              //for j:= (N div TILE_N)*TILE_N to N-1 do
+              //    C[i_d*ldc + j] := C[i_d*ldc + j] + A_PART*B[k_d*ldb + j];
           end;
       inc(kk, TILE_K)
   end;
 
-  for kk := RK to K-1 do
+  for kk := CK to K-1 do
       for i_d:=idx to idx+TILE_M -1 do begin
           A_PART:= ALPHA*A[i_d*lda + kk];
           sxpay(@C[i_d*ldc], @B[kk*ldb], A_PART, N);
-//          for j:=0 to N-1 do
-//              C[i_d*ldc + j] := C[i_d*ldc + j] + A_PART*B[kk*ldb + j]
+          //for j:=0 to N-1 do
+          //    C[i_d*ldc + j] := C[i_d*ldc + j] + A_PART*B[kk*ldb + j]
       end;
 end;
 
 procedure gemm_nn_fast(const M, N, K:PtrInt; const ALPHA:single;
             const A: PSingle; const lda:PtrInt;
             const B: PSingle; const ldb:PtrInt;
-            const C: PSingle; const ldc:PtrInt);inline;
+            const C: PSingle; const ldc:PtrInt);local;
 var
-  i, kk, RN, RM, RK:PtrInt;
+  i, kk, CN, CM, CK:PtrInt;
   A_PART:Single;
   j, i_d, k_d: PtrInt;
   P :TMPParams;
 begin
-  RK := (K div TILE_K)*TILE_K;
-  RM := (M div TILE_M)*TILE_M;
-  RN := (N div TILE_N)*TILE_N;
+  CK := (K div TILE_K)*TILE_K;
+  CM := (M div TILE_M)*TILE_M;
+  CN := (N div TILE_N)*TILE_N;
 
   p.A :=  A     ;
   p.B :=  B     ;
@@ -714,49 +712,22 @@ begin
   p.e :=  @ldb   ;
   p.f :=  @ldc   ;
   p.g :=  @ALPHA ;
-  p.h :=  @RK    ;
-  p.i :=  @RN    ;
+  p.h :=  @CK    ;
+  p.i :=  @CN    ;
   p.j :=  @N     ;
   p.k :=  @K     ;
 
-//  i := 0;
-//  while i < RM do begin
-//      kk:=0;
-//      while kk < RK do begin
-//          j:=0;
-//          while j < RN do begin
-//              nn_fast(A, B, C, ALPHA, lda, ldb, ldc,i, j, kk);
-//              inc(j, TILE_N)
-//          end;
-//
-//          for i_d:=i to i+TILE_M -1 do
-//              for k_d:=kk to kk + TILE_K-1 do begin
-//                  A_PART := ALPHA*A[i_d*lda + k_d];
-//                  sxpay(@C[i_d*ldc + RN], @B[k_d*ldb + RN], A_PART, N-RN);
-//                  //for j:= (N div TILE_N)*TILE_N to N-1 do
-//                  //    C[i_d*ldc + j] := C[i_d*ldc + j] + A_PART*B[k_d*ldb + j];
-//              end;
-//          inc(kk, TILE_K)
-//      end;
-//
-//      for kk := RK to K-1 do
-//          for i_d:=i to i+TILE_M -1 do begin
-//              A_PART:= ALPHA*A[i_d*lda + kk];
-//              sxpay(@C[i_d*ldc], @B[kk*ldb], A_PART, N);
-////              for j:=0 to N-1 do
-////                  C[i_d*ldc + j] := C[i_d*ldc + j] + A_PART*B[kk*ldb + j]
-//          end;
-//      inc(i,TILE_M)
-//  end;
+{$ifdef USE_MULTITHREADING}
+  MP.&for(nn_fastMP, 0, CM, @p, TILE_M);
+{$else}
+  i:=0;
+  while i< CM do begin
+     nn_fastMP(i, @p);
+     inc(i, TILE_M)
+  end;
+{$endif}
 
-  MP.&for(nn_fastMP, 0, RM, @p, TILE_M);
-  //i:=0;
-  //while i< RM do begin
-  //   nn_fastMP(i, @p);
-  //   inc(i, TILE_M)
-  //end;
-
-  for i := RM to M-1 do
+  for i := CM to M-1 do
       for kk := 0 to K-1 do begin
           A_PART := ALPHA*A[i*lda + kk];
           sxpay(@C[i*ldc], @B[kk*ldb], A_PART, N);
@@ -765,7 +736,6 @@ begin
       end
 end;
 {$endif}
-
 
 procedure nn(const f,t:PtrInt;  const ptr:pointer);
 var
@@ -1061,7 +1031,7 @@ begin
             //for j := 0 to N -1 do
             //  C[i * ldc+j] := C[i * ldc+j] * BETA;
     if not boolean(TA) and not boolean(TB) then
-        {$if defined(FPUAVX2)}
+        {$if defined(CPUX64) and defined(FPUAVX2)}
         gemm_nn_fast(M, N, K, ALPHA, A, lda, B, ldb, C, ldc)
         {$else}
         gemm_nn(M, N, K, ALPHA, A, lda, B, ldb, C, ldc)

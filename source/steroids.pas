@@ -113,11 +113,14 @@ type
   {$else}
   TGroupPriority = TThreadPriority;
   {$endif}
-  TGroupProc    = procedure(const _start,_end:PtrInt;const params:Pointer);
-  {$ifdef fpc}  TGroupProcNested=procedure(const _start,_end:PtrInt; const params:Pointer)is nested;register;{$endif} // must be [register]?
-  TGroupMethod  = procedure(const _start,_end:PtrInt;const params:Pointer) of object;
+  TGroupProc    = procedure(const _start,_end:IntPtr;const params:Pointer);
+  {$ifdef fpc}  TGroupProcNested=procedure(const _start,_end:IntPtr; const params:Pointer)is nested;
+  {$else}  TGroupProcNested= reference to procedure(const _start,_end:IntPtr; const params:Pointer); {$endif} // must be [register]?
+  TGroupMethod  = procedure(const _start,_end:IntPtr;const params:Pointer) of object;
   TThreadProc   = procedure(arg :Pointer);
   TThreadProc2  = procedure( i:IntPtr ; arg:pointer);
+  TThreadProcNested  = {$ifndef FPC} reference to {$endif}procedure( i:IntPtr ; arg:pointer){$ifdef FPC}is nested{$endif};
+
   TOPool = class;
 
 { TOThread }
@@ -125,17 +128,16 @@ TOThread=class(TThread)
   //TGroupProc=procedure(const params:PPointer);
 private
   Fire:{$ifdef FPC}PRTLEvent{$else}{$ifdef MSWINDOWS}THandle{$else}TEvent {$endif}{$endif};
-  FStart,FSpan,FEnd:PtrInt;
+  FStart,FSpan,FEnd:IntPtr;
   FID:integer;
   FParams:Pointer;
   FSync:TThreadMethod;
   FProc:TGroupProc;
-{$ifdef FPC}
   FProcNested:TGroupProcNested;
-{$endif}
   FMethod:TGroupMethod;
   FThreadProc  : TThreadProc;
   FThreadProc2 : TThreadProc2;
+  FThreadProcNested:TThreadProcNested;
   FBusy:boolean;
   FPool:TOPool;
 public
@@ -146,9 +148,11 @@ public
   property Pool:TOpool read FPool;
   property Busy:boolean read FBusy;
   property Id:integer read FID;
-  property From:PtrInt read FStart;
-  property &To:PtrInt read FEnd;
+  property From:IntPtr read FStart;
+  property &To:IntPtr read FEnd;
 end;
+
+
 { TOPool }
 TOPool = class
 private
@@ -160,13 +164,16 @@ public
   constructor Create;
   destructor Destroy; override;
   procedure setWorkers(Count:longint);
-  procedure &For(const Proc: TGroupProc; const _from, _to: PtrInt; const Params: Pointer = nil); overload;
-{$ifdef FPC}
-  procedure &For(const Proc:TGroupProcNested;const _from,_to:PtrInt;const Params:Pointer = nil); overload;
-{$endif}
-  procedure &For(const Proc:TGroupMethod;const _from,_to:PtrInt;const Params:Pointer = nil); overload;
+  procedure &For(const Proc: TGroupProc; const _from, _to: IntPtr; const Params: Pointer = nil); overload;
 
-  procedure &for(const proc:TThreadProc2; const start, count:PtrInt; const args:Pointer; const step:PtrInt=1; const sync:TThreadMethod=nil); overload;
+  procedure &For(const Proc:TGroupProcNested;const _from,_to:IntPtr;const Params:Pointer = nil); overload;
+
+  procedure &For(const Proc:TGroupMethod;const _from,_to:IntPtr;const Params:Pointer = nil); overload;
+
+  procedure &for(const proc:TThreadProc2; const start, count:IntPtr; const args:Pointer; const step:IntPtr=1; const sync:TThreadMethod=nil); overload;
+
+  procedure &For(const proc: TThreadProcNested; const start, count: IntPtr; const args: Pointer=nil; const step: IntPtr=1; const sync: TThreadMethod=nil);overload;
+
   function isBusy:boolean;
   procedure setPriority(const priority:TGroupPriority);
   property Workers:longint read getWorkers write SetWorkers;
@@ -298,12 +305,11 @@ begin
         FProc(FStart,FEnd,FParams);
         FProc:=nil;
       end;
-{$ifdef FPC}
+
       if Assigned(FProcNested) then begin
         FProcNested(FStart,FEnd,FParams);
         FProcNested:=nil;
       end;
-{$endif}
       if Assigned(FMethod) then begin
         FMethod(FStart,FEnd,FParams);
         FMethod:=nil;
@@ -317,6 +323,15 @@ begin
            inc(FStart, FSpan);
         end;
         FThreadProc2:=nil;
+      end;
+      if Assigned(FThreadProcNested) then begin
+        while FStart<FEnd do begin
+           FThreadProcNested(FStart,FParams);
+           if assigned(FSync) then
+                Queue(FSync);
+           inc(FStart, FSpan);
+        end;
+        FThreadProcNested:=nil;
       end;
       //EnterCriticalSection(FPool.FCriticalSection);
       {$ifdef FPC}
@@ -424,9 +439,9 @@ begin
   result:=length(Pool)
 end;
 
-procedure TOPool.&For(const Proc: TGroupProc; const _from, _to: PtrInt;
+procedure TOPool.&For(const Proc: TGroupProc; const _from, _to: IntPtr;
   const Params: Pointer);
-var i,N,group_m,group_t,ii:PtrInt;
+var i,N,group_m,group_t,ii:IntPtr;
 begin
     if _to < _from then exit;
     while OTCount>0 do;// the pool is still hot! wait for it to cooldown before jumping in.
@@ -460,11 +475,10 @@ begin
     //RTLEventWaitFor(PoolDone);
     waitForPool
 end;
-{$ifdef FPC}
 
-procedure TOPool.&For(const Proc: TGroupProcNested; const _from, _to: PtrInt;
+procedure TOPool.&For(const Proc: TGroupProcNested; const _from, _to: IntPtr;
   const Params: Pointer);
-var i,N,group_m,group_t, ii:PtrInt;
+var i,N,group_m,group_t, ii:IntPtr;
 begin
     if _to < _from then exit;
     while OTCount>0 do;// the pool is still hot! waiting to cooldown before jumping in.
@@ -482,17 +496,25 @@ begin
           Pool[i].FProcNested:=Proc;
           Pool[i].FBusy:=true;
           //Pool[i].FSync:=sync;
+          {$ifdef FPC}
           InterLockedIncrement(OTCount);
-          RTLEventSetEvent(Pool[i].Fire)
+          RTLEventSetEvent(Pool[i].Fire);
+          {$else}
+          TInterLocked.Increment(OTCount);
+          {$ifdef MSWINDOWS}
+          SetEvent(Pool[i].Fire);
+          {$else}
+          Pool[i].Fire.SetEvent();
+          {$endif}
+          {$endif}
       end;
     //RTLEventWaitFor(PoolDone);
     waitForPool
 end;
-{$endif}
 
-procedure TOPool.&For(const Proc: TGroupMethod; const _from, _to: PtrInt;
+procedure TOPool.&For(const Proc: TGroupMethod; const _from, _to: IntPtr;
   const Params: Pointer);
-var i,N,group_m,group_t,ii:PtrInt;
+var i,N,group_m,group_t,ii:IntPtr;
 begin
     if _to < _from then exit;
     while OTCount>0 do;// the pool is still hot! waiting to cooldown before jumping in.
@@ -526,10 +548,10 @@ begin
     waitForPool
 end;
 
-procedure TOPool.&for(const proc: TThreadProc2; const start, count: PtrInt;
-  const args: Pointer; const step: PtrInt; const sync:TThreadMethod);
+procedure TOPool.&for(const proc: TThreadProc2; const start, count: IntPtr;
+  const args: Pointer; const step: IntPtr; const sync:TThreadMethod);
 var
-  span, i, ii:PtrInt;
+  span, i, ii:IntPtr;
 begin
     if count < start then exit;
     while OTCount>0 do;// the pool is still hot! waiting to cooldown before jumping in.
@@ -560,6 +582,41 @@ begin
     //RTLEventWaitFor(PoolDone);
     waitForPool
 end;
+
+procedure TOPool.&for(const proc: TThreadProcNested; const start, count: IntPtr; const args: Pointer; const step: IntPtr; const sync:TThreadMethod);
+var
+  span, i, ii:IntPtr;
+begin
+    if count < start then exit;
+    while OTCount>0 do;// the pool is still hot! waiting to cooldown before jumping in.
+    span:=step*Length(Pool);
+    ii:=start;
+    for i:=0 to high(pool) do begin
+        Pool[i].FStart:=ii;
+        inc(ii,step);
+        if ii>count then break;
+        Pool[i].FSpan:=Span;
+        Pool[i].FEnd:=count;
+        Pool[i].FParams:=args ;
+        Pool[i].FThreadProcNested:=Proc;
+        Pool[i].FBusy:=true;
+        Pool[i].FSync:=sync;
+        {$ifdef FPC}
+        InterLockedIncrement(OTCount);
+        RTLEventSetEvent(Pool[i].Fire);
+        {$else}
+        TInterLocked.Increment(OTCount);
+          {$ifdef MSWINDOWS}
+          SetEvent(Pool[i].Fire);
+          {$else}
+          Pool[i].Fire.SetEvent();
+          {$endif}
+        {$endif}
+    end;
+    //RTLEventWaitFor(PoolDone);
+    waitForPool
+end;
+
 
 initialization
   MP:=TOPool.Create;

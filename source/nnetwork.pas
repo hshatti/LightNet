@@ -94,7 +94,7 @@ function num_detections(const net: PNetwork; const thresh: single):longint;
 function num_detections_batch(const net: PNetwork; const thresh: single; const batch: longint):longint;
 function make_network_boxes(const net: PNetwork; const thresh: single; const num: PLongint):TArray<TDetection>;
 function make_network_boxes_batch(const net: PNetwork; const thresh: single; const num: Plongint; const batch: longint):TArray<TDetection>;
-procedure custom_get_region_detections(const l: TLayer; const w, h, net_w, net_h: longint; const thresh: single; const map: Plongint; const hier: single; const relative: boolean; const dets: PDetection; const letter: boolean);
+procedure custom_get_region_detections(const l: PRegionLayer; const w, h, net_w, net_h: longint; const thresh: single; const map: Plongint; const hier: single; const relative: boolean; const dets: PDetection; const letter: boolean);
 procedure fill_network_boxes(const net: Pnetwork; const w, h: longint; const thresh, hier: single; const map: Plongint; const relative: boolean; dets: PDetection; const letter: boolean);
 procedure fill_network_boxes_batch(const net: Pnetwork; const w, h: longint; const thresh, hier: single; const map: Plongint; const relative: boolean; dets: PDetection; const letter: boolean; const batch: longint);
 function get_network_boxes(const net: PNetwork; const w, h: longint; const thresh, hier: single; const map: Plongint; relative: boolean; const num: Plongint; const letter: boolean):TArray<TDetection>;
@@ -348,8 +348,8 @@ begin
     setLength(result.rewritten_bbox, 1);// := longint(xcalloc(1, sizeof(int)));
     result.rewritten_bbox[0] :=0;
     result.total_bbox[0] := 0;
-    result.cuda_graph_ready := TIntegers.Create(1);//longint(xcalloc(1, sizeof(int)));
 {$ifdef GPU}
+    result.cuda_graph_ready := TIntegers.Create(1);//longint(xcalloc(1, sizeof(int)));
     result.input_gpu := single(xcalloc(1, sizeof(float * )));
     result.truth_gpu := single(xcalloc(1, sizeof(float * )));
     result.input16_gpu := single(xcalloc(1, sizeof(float * )));
@@ -428,9 +428,9 @@ begin
     sum := 0;
     count := 0;
     for i := 0 to net.n -1 do
-        if assigned(net.layers[i].cost) then
+//        if assigned(net.layers[i].cost) then
             begin
-                sum := sum + net.layers[i].cost[0];
+                sum := sum + net.layers[i].cost;
                 inc(count)
             end;
     exit(sum / count)
@@ -981,16 +981,16 @@ end;
 function num_detections(const net: PNetwork; const thresh: single):longint;
 var
     i, s: longint;
-    l: TLayer;
+    l: PLayer;
 begin
     s := 0;
     for i := 0 to net.n -1 do
         begin
-            l := net.layers[i];
+            l := @net.layers[i];
             if l.&type = ltYOLO then
-                s := s + yolo_num_detections(l, thresh);
+                s := s + yolo_num_detections(PYoloLayer(l), thresh);
             if l.&type = ltGaussianYOLO then
-                s := s + gaussian_yolo_num_detections(l, thresh);
+                s := s + gaussian_yolo_num_detections(PGaussianYoloLayer(l), thresh);
             if (l.&type = ltDETECTION) or (l.&type = ltREGION) then
                 s := s + (l.w * l.h * l.n)
         end;
@@ -1000,12 +1000,12 @@ end;
 function num_detections_batch(const net: PNetwork; const thresh: single; const batch: longint):longint;
 var
     i, s: longint;
-    l: TLayer;
+    l: PYoloLayer;
 begin
     s := 0;
     for i := 0 to net.n -1 do
         begin
-            l := net.layers[i];
+            l := @net.layers[i];
             if l.&type = ltYOLO then
                 s := s + yolo_num_detections_batch(l, thresh, batch);
             if (l.&type = ltDETECTION) or (l.&type = ltREGION) then
@@ -1024,7 +1024,7 @@ begin
     for i := 0 to net.n -1 do
         begin
             l_tmp := @net.layers[i];
-            if (l_tmp.&type = ltYOLO) or (l_tmp.&type = ltGaussianYOLO) or (l_tmp.&type = ltDETECTION) or (l_tmp.&type = ltREGION) then
+            if l_tmp.&type in [ltYOLO, ltGaussianYOLO, ltDETECTION, ltREGION] then
                 begin
                     l := l_tmp;
                     break
@@ -1092,7 +1092,10 @@ begin
 
 end;
 
-procedure custom_get_region_detections(const l: TLayer; const w, h, net_w, net_h: longint; const thresh: single; const map: Plongint; const hier: single; const relative: boolean; const dets: PDetection; const letter: boolean);
+procedure custom_get_region_detections(const l: PRegionLayer; const w, h,
+  net_w, net_h: longint; const thresh: single; const map: Plongint;
+  const hier: single; const relative: boolean; const dets: PDetection;
+  const letter: boolean);
 var
     probs: TArray<TArray<Single>>;
     i: longint;
@@ -1139,7 +1142,7 @@ begin
             l := @net.layers[j];
             if l.&type = ltYOLO then
                 begin
-                    count := get_yolo_detections(l[0], w, h, net.w, net.h, thresh, map, relative, dets, letter);
+                    count := get_yolo_detections(PYoloLayer(l), w, h, net.w, net.h, thresh, map, relative, dets, letter);
                     dets := dets + count;
                     if prev_classes < 0 then
                         prev_classes := l.classes
@@ -1149,17 +1152,17 @@ begin
                 end;
             if l.&type = ltGaussianYOLO then
                 begin
-                    count := get_gaussian_yolo_detections(l[0], w, h, net.w, net.h, thresh, map, relative, dets, letter);
+                    count := get_gaussian_yolo_detections(PGaussianYoloLayer(l), w, h, net.w, net.h, thresh, map, relative, dets, letter);
                     dets := dets + count
                 end;
             if l.&type = ltREGION then
                 begin
-                    custom_get_region_detections(l[0], w, h, net.w, net.h, thresh, map, hier, relative, dets, letter);
+                    custom_get_region_detections(PRegionLayer(l), w, h, net.w, net.h, thresh, map, hier, relative, dets, letter);
                     dets := dets + (l.w * l.h * l.n)
                 end;
             if l.&type = ltDETECTION then
                 begin
-                    get_detection_detections(l[0], w, h, thresh, dets);
+                    get_detection_detections(PDetectionLayer(l), w, h, thresh, dets);
                     dets := dets + (l.w * l.h * l.n)
                 end
         end
@@ -1177,7 +1180,7 @@ begin
             l := @net.layers[j];
             if l.&type = ltYOLO then
                 begin
-                    count := get_yolo_detections_batch(l[0], w, h, net.w, net.h, thresh, map, relative, dets, letter, batch);
+                    count := get_yolo_detections_batch(PYoloLayer(l), w, h, net.w, net.h, thresh, map, relative, dets, letter, batch);
                     dets := dets + count;
                     if prev_classes < 0 then
                         prev_classes := l.classes
@@ -1187,12 +1190,12 @@ begin
                 end;
             if l.&type = ltREGION then
                 begin
-                    custom_get_region_detections(l[0], w, h, net.w, net.h, thresh, map, hier, relative, dets, letter);
+                    custom_get_region_detections(PRegionLayer(l), w, h, net.w, net.h, thresh, map, hier, relative, dets, letter);
                     dets := dets + (l.w * l.h * l.n)
                 end;
             if l.&type = ltDETECTION then
                 begin
-                    get_detection_detections(l[0], w, h, thresh, dets);
+                    get_detection_detections(PDetectionLayer(l), w, h, thresh, dets);
                     dets := dets + (l.w * l.h * l.n)
                 end
         end
@@ -1500,8 +1503,8 @@ begin
     //freeMemAndNil(net.scales);
     //freeMemAndNil(net.steps);
     //freeMemAndNil(net.seen);
-    freeMemAndNil(net.cuda_graph_ready);
 {$ifdef GPU}}
+    freeMemAndNil(net.cuda_graph_ready);
 {$endif}
     //freeMemAndNil(net.badlabels_reject_threshold);
     //freeMemAndNil(net.delta_rolling_max);

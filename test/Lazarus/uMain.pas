@@ -13,7 +13,7 @@ uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
   ComCtrls, math, TypInfo, StrUtils, lightnet, nnetwork, parser, cfg, data, imageData, uimgform,ConvolutionalLayer, box,
   steroids, OpenCLHelper
-  {$ifdef _MSWINDOWS}
+  {$ifdef USE_OPENCV}
   , opencv
   {$endif};
 
@@ -27,7 +27,6 @@ type
     Button3: TButton;
     CheckBox1: TCheckBox;
     Image1: TImage;
-    bmp:Graphics.TBitmap;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
@@ -46,6 +45,7 @@ type
     procedure Button3Click(Sender: TObject);
     procedure CheckBox1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
   private
@@ -56,13 +56,20 @@ var
   Form1 : TForm1;
   ocl : TOpenCL;
   img:TImageData;
+  bmp:Graphics.TBitmap;
 
 implementation
 
 {$R *.lfm}
 
+{$ifdef USE_OPENCV}
+var
+  cap:PCvCapture;
+  im2:PIplImage;
+{$endif}
+
 const
-  thresh = 0.25;
+  thresh = 0.5;
   hier_thresh=0.5;
 procedure OnForward(const idx:longint;const net:PNetwork);
 var
@@ -74,12 +81,12 @@ var
 begin
   l:=@net.layers[idx];
   write(#13,idx:4,' Detecting ... ',(100*idx/net.n):1:1,'%  - ', get_layer_string(l.&type),'                     ');
-  Form1.Memo1.Lines[Form1.Memo1.lines.Count-1]:=format('%4d Detecting ... %.1f%% - %s',[idx,(100*idx/net.n), get_layer_string(l.&type)]);
-  //if l.&type=ltCONVOLUTIONAL then begin
-  //  norm:=get_convolutional_image(l^);
-  //  normalize_image2(norm);
-  //  TImgForm.ShowImage( collapse_image_layers(norm,1),true);
-  //end;
+  //Form1.Memo1.Lines[Form1.Memo1.lines.Count-1]:=format('%4d Detecting ... %.1f%% - %s',[idx,(100*idx/net.n), get_layer_string(l.&type)]);
+  ////if l.&type=ltCONVOLUTIONAL then begin
+  ////  norm:=get_convolutional_image(l^);
+  ////  normalize_image2(norm);
+  ////  TImgForm.ShowImage( collapse_image_layers(norm,1),true);
+  ////end;
   Application.ProcessMessages;
   //if net.n-1 = idx then begin
   //    writeln(format('%d x %d x %d , outputs = %d , classes = %d', [l.w, l.h, l.n, l.outputs, l.classes]));
@@ -104,7 +111,7 @@ var
     l: TLayer;
     //X: TSingles;
     X:TArray<single>;
-    nboxes,i, labels_size: longint;
+    nboxes, c, y, xx, i, j, labels_size: longint;
     dets : TArray<TDetection>;
 begin
     if isDetecting then begin
@@ -129,11 +136,40 @@ begin
 
     l := net.layers[net.n-1];
 
-    i:=0;
+    j:=0;
     isDetecting := true;
     while isDetecting do begin
-      input:=filenames[i];
-      im := load_image_color('data/'+input+'.jpg', 0, 0);
+      if Form1.CheckBox1.Checked  then begin
+      {$ifdef USE_OPENCV}
+        if not assigned(cap) then  begin
+            cap := cvCreateCameraCapture(CV_CAP_ANY);
+            if not assigned(cap) then
+                raise exception.Create('ERROR : Cannot open device');
+            cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_WIDTH,1280);
+            cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_HEIGHT,720);
+            if assigned(bmp) then
+              bmp.SetSize(640, 480);
+            im.data:=nil;
+        end;
+        im2 := cvQueryFrame(cap);
+        if not assigned(im.data) then
+            im := make_image(im2.width, im2.height, im2.nChannels);
+        for c:=0 to im.c-1 do
+          for y:=0 to im.h-1 do
+            for xx:= 0 to im.w-1 do
+            im.data[(c*im.h + y)*im.w + xx] := im2.imageData[(y*im.w + xx)*im.c + 2-c]/$ff;
+      {$endif}
+      end
+      else begin
+        {$ifdef USE_OPENCV}
+        if assigned(cap) then begin
+            cvReleaseCapture(@cap);
+            cap := nil
+        end;
+        {$endif}
+        input:=filenames[j];
+        im := load_image_color('data/'+input+'.jpg', 0, 0);
+      end;
       sized := letterbox_image(im, net.w, net.h);
       X := sized.data;
       time := clock();
@@ -146,19 +182,20 @@ begin
           do_nms_sort(dets, nboxes, l.classes, nms);
 
       writeln(format('  thersh[%.2f] Detections [%d]', [thresh, Length(dets)]));
-      draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 1);
-      save_image(im, input+'1');
-      if FileExists(input+'1.jpg') then
-          Form1.Image1.picture.loadFromFile(input+'1.jpg');
-      Form1.Image1.Repaint;
+      draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 0.5 ,true);
+      Form1.Image1.Picture.Graphic:=imageToBitmap(im,bmp);
       application.ProcessMessages;
-      inc(i);
-      if i=length(filenames) then i:=0;
+      inc(j);
+      if j=length(filenames) then j:=0;
 
       writeln(sLineBreak+sLineBreak, metrics.print);
 
     end;
     free_network(net);
+    {$ifdef USE_OPENCV}
+    if assigned(cap) then
+        cvReleaseCapture(@cap)
+    {$endif}
 
     //free_detections(dets, nboxes);
     //exit;
@@ -230,12 +267,18 @@ begin
     if not SameValue(a[i],b[i],0) then exit(i)
 end;
 
-procedure xpays_pas(const x,y:PSingle; const a: single; const count:PtrInt);
-var
-  i: PtrInt;
-begin
-  for i:=0 to count-1 do
-    x[i]:=x[i]+a*y[i]
+procedure xpays_pas( x,y:PSingle; const a: single; const count:PtrInt);
+asm
+@while:
+  vmovss      xmm0 , dword [x]
+  //vmulss      xmm0 , a    , dword ptr [y]
+  //vaddss      xmm0 , xmm0 , dword ptr [x]
+  vfmadd231ss xmm0 , a , dword [y]
+  vmovss      dword [x]  , xmm0
+  add         x    , sizeof(single)
+  add         y    , sizeof(single)
+  dec         count
+  jnz         @while
 end;
 
 
@@ -246,58 +289,64 @@ TPixel=record
   b,g,r:byte;
 end;
 
-{$ifdef _MSWINDOWS}
-var
-  cap:PCvCapture;
-  im,im2:PIplImage;
-{$endif}
-
 
 procedure TForm1.CheckBox1Change(Sender: TObject);
 
   var d:double;
   i:longint;
-  bmp:Graphics.TBitmap;
 begin
-  {$ifdef _MSWINDOWS}
+  {$ifdef USE_OPENCV}
+  if isDetecting then exit;
   if not CheckBox1.Checked then exit;
   cap:=nil;
-  im:=nil;
-  bmp:=nil;
+  im2:=nil;
+  //bmp:=nil;
   //cvNamedWindow('koko',CV_GUI_NORMAL);
-  cap := cvCreateCameraCapture(CV_CAP_ANY);
+  cap := cvCreateCameraCapture(CV_CAP_DSHOW);
 
   if not assigned(cap) then
       raise exception.Create('ERROR : Cannot open device');
-  cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_WIDTH,640);
-  cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_HEIGHT,480);
+  cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_WIDTH,1024);
+  cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_HEIGHT,768);
 
-  im:=cvQueryFrame(cap);
-  if not assigned(bmp) then
+  im2:=cvQueryFrame(cap);
+  if assigned(bmp) then
       begin
-          bmp:=Graphics.TBitmap.create();
-          bmp.PixelFormat:=([pf8bit, pf16bit, pf24bit, pf32bit])[im.nChannels-1];
-          bmp.setSize(im.width,im.height);
+          bmp.PixelFormat:=([pf8bit, pf16bit, pf24bit, pf32bit])[im2.nChannels-1];
+          bmp.setSize(im2.width,im2.height);
       end;
-  writeln(im.depth,':',im.imageSize,':',im.channelSeq,':',im.nChannels,' x ', im.height,' x ',im.width);
+  writeln(im2.depth,':',im2.imageSize,':',im2.channelSeq,':',im2.nChannels,' x ', im2.height,' x ',im2.width);
   while CheckBox1.Checked and not Application.Terminated do begin
-    im:=cvQueryFrame(cap);
+    if isDetecting then exit;
+    im2:=cvQueryFrame(cap);
     bmp.BeginUpdate();
-    for i:=0 to im.height-1 do
-        move(im.imageData[i*im.width*im.nChannels], bmp.ScanLine[i]^,sizeof(TPixel)*im.width);
+    if assigned(im2) then
+      for i:=0 to im2.height-1 do
+        move(im2.imageData[i*im2.width*im2.nChannels], bmp.ScanLine[i]^,sizeof(TPixel)*im2.width);
     bmp.EndUpdate();
     Image1.Picture.Graphic:=bmp;
     Application.ProcessMessages;
   end;
-  bmp.free;
-  cvReleaseCapture(@cap);
+  if assigned(cap) then
+      cvReleaseCapture(@cap);
+  cap:=nil
   {$endif}
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  Memo1.Lines.Add('Current directory : ' + GetCurrentDir)
+  Memo1.Lines.Add('Current directory : ' + GetCurrentDir) ;
+  bmp := Graphics.TBitmap.Create;
+end;
 
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+  {$ifdef USE_OPENCV}
+  if assigned(cap) then
+    cvReleaseCapture(@cap);
+  cap:=nil;
+  {$endif}
+  bmp.Free
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -422,19 +471,140 @@ begin
       end;
 end;
 
+
+
+procedure baseline_mmul(const A, B, C:PSingle; N :size_t);
+var row, col, idx :size_t;
+begin
+  // For each row...
+  for row := 0 to N-1 do
+    // For each col...
+    for idx := 0 to N-1 do
+      // For each element in the row/col pair...
+      xpays_pas(@C[row * N], @B[idx * N], A[row * N + idx], N);
+      //for col := 0 to N-1 do
+      //  // Accumulate the partial results
+      //  C[row * N + col] += A[row * N + idx] * B[idx * N + col];
+end;
+
+{$PointerMath on}
+const TILE_S=16;
+procedure blocked_mmul(const A, B, C:PSingle; N :size_t);
+var row, block, chunk, sub_chunk, idx :size_t; CC, BB:PSingle; A_PART:single;
+begin
+  // For each row...
+  for row := 0 to N -1 do begin
+    // For each block in the row...
+    // Solve for 16 elements at a time
+    block:=0;
+    while block < N do begin
+      // For each chunk of A/B for this block
+      chunk := 0;
+      while chunk < N  do begin
+        // For each row in the chunk
+
+        for sub_chunk := 0 to TILE_S -1 do begin
+          A_PART := A[row * N + chunk + sub_chunk];
+          CC := @C[row * N + block];
+          BB := @B[chunk * N + sub_chunk * N + block];
+          // Go through all the elements in the sub chunk
+          //xpays_pas(CC, BB, A_PART , TILE_S);
+          for idx := 0 to TILE_S - 1 do begin
+            CC[idx] +=
+                A_PART *
+                BB[idx];
+          end;
+        end;
+        inc(chunk,TILE_S)
+      end;
+      inc(block,TILE_S)
+    end;
+  end;
+end;
+
+const TILE_R = 32;
+procedure blocked_column_mmul(const A, B, C:PSingle; N :size_t);
+var row, block, tile_row, col_chunk, tile, idx :size_t; CC, BB:PSingle; A_PART:single;
+begin
+  col_chunk := 0;
+  while col_chunk < N do begin
+    // For each row in that chunk of columns...
+    for row := 0 to N-1 do begin
+      // For each block of elements in this row of this column chunk
+      // Solve for 16 elements at a time
+      tile:=0;
+      CC:=@C[row * N + col_chunk];
+      prefetch(CC[0]);
+      while tile < N do begin
+        // For each row in the tile
+        for tile_row := 0 to TILE_R -1 do begin
+          BB:=@B[tile * N + tile_row * N + col_chunk];
+          A_PART := A[row * N + tile + tile_row];
+          // Solve for each element in this tile row
+          for idx := 0 to TILE_R-1 do
+            CC[idx] += A_PART * BB[idx];
+        end;
+        inc(tile , TILE_R)
+      end;
+    end;
+    inc(col_chunk , TILE_R)
+  end
+end;
+
 procedure TForm1.Button3Click(Sender: TObject);
+const N = //384;
+           //768;
+           1152;
+  uTickPerSec=1000000;
+  EPS=0.000001;
 var
-  t, i : int64;  b:PByte;
+  t, i : int64;  pb:PByte;
   p :TMPParams;
+  //A,B,C,D:PSingle;
+  //diff:single;
 begin
 
+  //A:=AllocMem((N*N+64) * sizeof(single));
+  //A:=System.align(A,64);
+  //B:=AllocMem((N*N+64) * sizeof(single));
+  //B:=System.align(B,64);
+  //C:=AllocMem((N*N+64) * sizeof(single));
+  //C:=System.align(C,64);
+  //D:=AllocMem((N*N+64) * sizeof(single));
+  //D:=System.align(D,64);
+  //
+  //for i:=0 to N-1
+  //  do A[i] := random()*20 - 10.0;
+  //for i:=0 to N-1 do
+  //  B[i] := random()*20 - 10.0;
+  //
+  //
+  //t:=clock();
+  //baseline_mmul(@A[0], @B[0], @C[0], N);
+  //t:=clock()-t;
+  //writeln('baseline gemm : ',t/uTickPerSec:3:3,'MS');
+  //
+  //t:=clock();
+  //blocked_column_mmul(@A[0], @B[0], @D[0], N);
+  //t:=clock()-t;
+  //writeln('block gemm : ',t/uTickPerSec:3:3,'MS');
+  //
+  //for i:=0 to min(100,N-1) do begin
+  //  diff:= 100*(D[i]-C[i])/D[i];
+  //  if diff > eps then
+  //      writeln(i,' ',C[i]:2:3, '  ', D[i]:2:3, '  ', diff:3:3,'%');
+  //end;
+  ////Freemem(A);
+  ////Freemem(b);
+  ////Freemem(C);
+  ////Freemem(D);
+  //exit;
 
-  bmp := Graphics.TBitmap.Create;
   bmp.PixelFormat:=pf32bit;
   bmp.setSize(1600, 1600);
 
 
-  b:=bmp.ScanLine[0];
+  pb:=bmp.ScanLine[0];
   image1.Picture.Graphic:=bmp;
   bmp.BeginUpdate();
   t:=clock();
@@ -451,7 +621,6 @@ begin
   bmp.EndUpdate();
   writeln((clock()-t)/1000000:3:3,'MS');
   Image1.Picture.Graphic:=bmp;
-  bmp.Free
 end;
 
 var i,j,k:IntPtr;
@@ -462,30 +631,32 @@ initialization
   SetCurrentDir(ExtractFilePath(ParamStr(0))+'../../../');
   {$endif}
   InitCriticalSection(semaphor);
-  ocl := TOpenCL.create(dtALL);
-  ocl.ActivePlatformId:=0;
-  writeln(ocl.DevicesTypeStr);
+  if TOpenCL.Plaforms>0 then begin
+    ocl := TOpenCL.create(dtALL);
+    ocl.ActivePlatformId:=1;
+    writeln(ocl.DevicesTypeStr);
 
-  writeln('Platforms :');
-  for i:=0 to ocl.PlatformCount-1 do
-    writeln(ifthen(i=ocl.ActivePlatformId,' *','  '),ocl.PlatformName(i));
+    writeln('Platforms :');
+    for i:=0 to ocl.PlatformCount-1 do
+      writeln(ifthen(i=ocl.ActivePlatformId,' *','  '),ocl.PlatformName(i));
 
-  ocl.ActiveDeviceId:=1;
-  writeln(sLineBreak, sLineBreak,'Devices:');
-  for i:=0 to ocl.DeviceCount-1 do
-    writeln(ifthen(i=ocl.ActiveDeviceId,' *','  '),ocl.DeviceName(i),', ', ocl.CLDeviceDriver,' : ', ocl.CLDeviceVersion, ' Units :', ocl.ProcessorsCount,' @ ',ocl.ProcessorsFrequency,'Mhz ');
-  writeln('');
-  wis := ocl.MaxWorkItemSizes;
-  writeln('MaxWorkItemSizes = ',wis[0],', ',wis[1],', ',wis[2],', ',#13#10'MaxWorkGroupSize = ', ocl.MaxWorkGroupSize);
-  ocl.LoadFromFile(GetCurrentDir+'/source/cl_sgemm.c');
-  writeln('Build :',ocl.Build);
-  writeln(ocl.BuildLog, sLineBreak, sLineBreak, 'Kernels :', sLineBreak);
-
-  for i:=0 to ocl.KernelCount-1 do begin
-    writeln('  ',ocl.KernelInfo(i).KernelName);
-    for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
-      writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
+    ocl.ActiveDeviceId:=0;
+    writeln(sLineBreak, sLineBreak,'Devices:');
+    for i:=0 to ocl.DeviceCount-1 do
+      writeln(ifthen(i=ocl.ActiveDeviceId,' *','  '),ocl.DeviceName(i),', ', ocl.CLDeviceDriver,' : ', ocl.CLDeviceVersion, ' Units :', ocl.ProcessorsCount,' @ ',ocl.ProcessorsFrequency,'Mhz ');
     writeln('');
+    wis := ocl.MaxWorkItemSizes;
+    writeln('MaxWorkItemSizes = ',wis[0],', ',wis[1],', ',wis[2],', ',#13#10'MaxWorkGroupSize = ', ocl.MaxWorkGroupSize);
+    ocl.LoadFromFile(GetCurrentDir+'/source/cl_sgemm.c');
+    writeln('Build :',ocl.Build());
+    writeln(ocl.BuildLog, sLineBreak, sLineBreak, 'Kernels :', sLineBreak);
+
+    for i:=0 to ocl.KernelCount-1 do begin
+      writeln('  ',ocl.KernelInfo(i).KernelName);
+      for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
+        writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
+      writeln('');
+    end;
   end;
 
 

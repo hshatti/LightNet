@@ -43,11 +43,11 @@ function entry_index(const l: TYoloLayer; const batch, location, entry: longint)
 procedure forward_yolo_layer(var l: TYoloLayer; const state: PNetworkState);
 procedure backward_yolo_layer(var l: TYoloLayer; const state: PNetworkState);
 procedure correct_yolo_boxes(const dets: PDetection; const n, w, h, netw, neth:longint; const relative, letter: boolean);
-function yolo_num_detections(const l: TYoloLayer; const thresh: single):longint;
-function yolo_num_detections_batch(l: TYoloLayer; const thresh: single; const batch: longint):longint;
+function yolo_num_detections(const l: PYoloLayer; const thresh: single):longint;
+function yolo_num_detections_batch(l: PYoloLayer; const thresh: single; const batch: longint):longint;
 procedure avg_flipped_yolo(const l: TYoloLayer);
-function get_yolo_detections(const l: TYoloLayer; const w, h, netw, neth: longint; const thresh: single; const map: TIntegers; const relative: boolean; const dets: PDetection; const letter: boolean):longint;
-function get_yolo_detections_batch(const l: TYoloLayer; const w, h, netw, neth: longint; const thresh: single; const map: Plongint; const relative: boolean; dets: PDetection; letter: boolean; batch: longint):longint;
+function get_yolo_detections(const l: PYoloLayer; const w, h, netw, neth: longint; const thresh: single; const map: TIntegers; const relative: boolean; const dets: PDetection; const letter: boolean):longint;
+function get_yolo_detections_batch(const l: PYoloLayer; const w, h, netw, neth: longint; const thresh: single; const map: Plongint; const relative: boolean; dets: PDetection; letter: boolean; batch: longint):longint;
 
 {$ifdef GPU}
 procedure forward_yolo_layer_gpu(const l: layer; state: network_state);
@@ -81,7 +81,7 @@ begin
     result.out_h := result.h;
     result.out_c := result.c;
     result.classes := classes;
-    result.cost := TSingles.Create(1);
+//    result.cost := TSingles.Create(1);
     result.biases := TSingles.Create(total * 2);
     result.nbiases := total * 2;
     if assigned(mask) then
@@ -718,7 +718,7 @@ begin
     avg_anyobj := 0;
     count := 0;
     class_count := 0;
-    l.cost[0] := 0;
+    l.cost := 0;
     setLength(threads, l.batch);
     setLength(yolo_args, l.batch);
     for b := 0 to l.batch -1 do
@@ -843,7 +843,7 @@ begin
     if l.show_details = 0 then
         begin
             loss := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
-            l.cost[0] := loss;
+            l.cost := loss;
             loss := loss / l.batch;
             writeln(ErrOutput, format('v3 (%s loss, Normalizer: (iou: %.2f, obj: %.2f, cls: %.2f) Region %d Avg (IOU: %f), count: %d, total_loss = %f ', [(ifthen(l.iou_loss = ilMSE, 'mse', (ifthen(l.iou_loss = ilGIOU, 'giou', 'iou')))), l.iou_normalizer, l.obj_normalizer, l.cls_normalizer, state.index, tot_iou / count, count, loss]))
         end;
@@ -908,7 +908,8 @@ begin
         end
 end;
 
-function yolo_num_detections(const l: TYoloLayer; const thresh: single):longint;
+function yolo_num_detections(const l: PYoloLayer; const thresh: single
+  ): longint;
 var
     i, n, count, obj_index: longint;
 begin
@@ -916,7 +917,7 @@ begin
     for n := 0 to l.n -1 do
         for i := 0 to l.w * l.h -1 do
             begin
-                obj_index := entry_index(l, 0, n * l.w * l.h+i, 4);
+                obj_index := entry_index(l^, 0, n * l.w * l.h+i, 4);
                 if //not isnan(l.output[obj_index]) and
                    (l.output[obj_index] > thresh) then
                     inc(count)
@@ -924,7 +925,8 @@ begin
     exit(count)
 end;
 
-function yolo_num_detections_batch(l: TYoloLayer; const thresh: single; const batch: longint):longint;
+function yolo_num_detections_batch(l: PYoloLayer; const thresh: single;
+  const batch: longint): longint;
 var
     i, n, count, obj_index: longint;
 begin
@@ -932,7 +934,7 @@ begin
     for i := 0 to l.w * l.h -1 do
         for n := 0 to l.n -1 do
             begin
-                obj_index := entry_index(l, batch, n * l.w * l.h+i, 4);
+                obj_index := entry_index(l^, batch, n * l.w * l.h+i, 4);
                 if //not isnan(l.output[obj_index]) and
                    (l.output[obj_index] > thresh) then
                     inc(count)
@@ -967,7 +969,7 @@ begin
         l.output[i] := (l.output[i]+flip[i]) / 2.0
 end;
 
-function get_yolo_detections(const l: TYoloLayer; const w, h, netw,
+function get_yolo_detections(const l: PYoloLayer; const w, h, netw,
   neth: longint; const thresh: single; const map: TIntegers;
   const relative: boolean; const dets: PDetection; const letter: boolean
   ): longint;
@@ -985,12 +987,12 @@ begin
             col := i mod l.w;
             for n := 0 to l.n -1 do
                 begin
-                    obj_index := entry_index(l, 0, n * l.w * l.h+i, 4);
+                    obj_index := entry_index(l^, 0, n * l.w * l.h+i, 4);
                     objectness := predictions[obj_index];
                     if //not isnan(objectness) and
                        (objectness > thresh) then
                         begin
-                            box_index := entry_index(l, 0, n * l.w * l.h+i, 0);
+                            box_index := entry_index(l^, 0, n * l.w * l.h+i, 0);
                             dets[count].bbox := get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w * l.h, l.new_coords);
                             dets[count].objectness := objectness;
                             dets[count].classes := l.classes;
@@ -998,7 +1000,7 @@ begin
                                 get_embedding(l.embedding_output, l.w, l.h, l.n * l.embedding_size, l.embedding_size, col, row, n, 0, @dets[count].embeddings[0]);
                             for j := 0 to l.classes -1 do
                                 begin
-                                    class_index := entry_index(l, 0, n * l.w * l.h+i, 4+1+j);
+                                    class_index := entry_index(l^, 0, n * l.w * l.h+i, 4+1+j);
                                     prob := objectness * predictions[class_index];
                                     if (prob > thresh) then
                                         dets[count].prob[j] := prob
@@ -1013,7 +1015,7 @@ begin
     exit(count)
 end;
 
-function get_yolo_detections_batch(const l: TYoloLayer; const w, h, netw,
+function get_yolo_detections_batch(const l: PYoloLayer; const w, h, netw,
   neth: longint; const thresh: single; const map: Plongint;
   const relative: boolean; dets: PDetection; letter: boolean; batch: longint
   ): longint;
@@ -1039,12 +1041,12 @@ begin
             col := i mod l.w;
             for n := 0 to l.n -1 do
                 begin
-                    obj_index := entry_index(l, batch, n * l.w * l.h+i, 4);
+                    obj_index := entry_index(l^, batch, n * l.w * l.h+i, 4);
                     objectness := predictions[obj_index];
                     if //not isnan(objectness) and
                        (objectness > thresh) then
                         begin
-                            box_index := entry_index(l, batch, n * l.w * l.h+i, 0);
+                            box_index := entry_index(l^, batch, n * l.w * l.h+i, 0);
                             dets[count].bbox := get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w * l.h, l.new_coords);
                             dets[count].objectness := objectness;
                             dets[count].classes := l.classes;
@@ -1052,7 +1054,7 @@ begin
                                 get_embedding(l.embedding_output, l.w, l.h, l.n * l.embedding_size, l.embedding_size, col, row, n, batch, @dets[count].embeddings[0]);
                             for j := 0 to l.classes -1 do
                                 begin
-                                    class_index := entry_index(l, batch, n * l.w * l.h+i, 4+1+j);
+                                    class_index := entry_index(l^, batch, n * l.w * l.h+i, 4+1+j);
                                     prob := objectness * predictions[class_index];
                                     if (prob > thresh) then
                                         dets[count].prob[j] := prob

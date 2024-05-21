@@ -208,72 +208,123 @@ begin
     {$ifdef USE_TELEMETRY} if benchmark then metrics.ops.finish(opCol2imExt);{$endif}
 end;
 
-procedure i2c_ext(idx:PtrInt; ptr:Pointer);
-var
-    channel_size, kernel_row, kernel_col, kernel_size, output_col, output_rows, out_channel_size, input_row, input_col: longint;
-    d_im,d_col:PSingle;
-    p : PMPParams absolute ptr;
-    output_w, output_h, kernel_w, kernel_h, pad_w, pad_h, stride_w, stride_h, dilation_w, dilation_h, width, height :longint;
-
-begin
-    d_im             := p.A;
-    d_col            := p.B;
-    output_w         := PLongint(p.C)^;
-    output_h         := PLongint(p.D)^;
-    kernel_w         := PLongint(p.E)^;
-    kernel_h         := PLongint(p.F)^;
-    pad_w            := PLongint(p.G)^;
-    pad_h            := PLongint(p.H)^;
-    stride_w         := PLongint(p.I)^;
-    stride_h         := PLongint(p.J)^;
-    dilation_w       := PLongint(p.K)^;
-    dilation_h       := PLongint(p.L)^;
-    width            := PLongint(p.M)^;
-    height           := PLongint(p.N)^;
-
-    channel_size     := height * width;
-    out_channel_size := output_w * output_h;
-    kernel_size      := kernel_w * kernel_h;
-    inc(d_im , channel_size * idx);
-    inc(d_col, kernel_size * out_channel_size * idx);
-
-    //fillchar(d_col[0], out_channel_size * kernel_size * sizeof(single), 0);
-    for kernel_row := 0 to kernel_h -1 do
-        for kernel_col := 0 to kernel_w -1 do
-            begin
-                input_row := -pad_h+kernel_row * dilation_h;
-                for output_rows := 0 to output_h-1 do begin
-                  //fillchar(d_col[0], output_w *sizeof(single), 0);
-                  if (input_row>=0) and (input_row < height) then begin
-                      input_col := -pad_w+kernel_col * dilation_w;
-                      for output_col := 0 to output_w-1 do begin
-                          if (input_col>=0) and (input_col < width) then
-                               d_col[output_col] := d_im[input_row * width+input_col]
-                          else
-                               d_col[output_col] := 0
-                               ;
-                          inc(input_col, stride_w);
-                      end;
-                  end
-                  else begin
-                      for output_col := 0 to output_w-1 do begin
-                          d_col[output_col] := 0;
-                      end;
-                  end
-                  ;
-                  inc(d_col, output_w);
-                  inc(input_row, stride_h)
-                end
-            end;
-end;
+//procedure i2c_ext(idx:PtrInt; ptr:Pointer);
+//var
+//    channel_size, kernel_row, kernel_col, kernel_size, output_col, output_rows, out_channel_size, input_row, input_col: longint;
+//    d_im,d_col:PSingle;
+//    p : PMPParams absolute ptr;
+//    output_w, output_h, kernel_w, kernel_h, pad_w, pad_h, stride_w, stride_h, dilation_w, dilation_h, width, height :longint;
+//
+//begin
+//    d_im             := p.A;
+//    d_col            := p.B;
+//    output_w         := PLongint(p.C)^;
+//    output_h         := PLongint(p.D)^;
+//    kernel_w         := PLongint(p.E)^;
+//    kernel_h         := PLongint(p.F)^;
+//    pad_w            := PLongint(p.G)^;
+//    pad_h            := PLongint(p.H)^;
+//    stride_w         := PLongint(p.I)^;
+//    stride_h         := PLongint(p.J)^;
+//    dilation_w       := PLongint(p.K)^;
+//    dilation_h       := PLongint(p.L)^;
+//    width            := PLongint(p.M)^;
+//    height           := PLongint(p.N)^;
+//
+//    channel_size     := height * width;
+//    out_channel_size := output_w * output_h;
+//    kernel_size      := kernel_w * kernel_h;
+//    inc(d_im , channel_size * idx);
+//    inc(d_col, kernel_size * out_channel_size * idx);
+//
+//    //fillchar(d_col[0], out_channel_size * kernel_size * sizeof(single), 0);
+//    for kernel_row := 0 to kernel_h -1 do
+//        for kernel_col := 0 to kernel_w -1 do
+//            begin
+//                input_row := -pad_h+kernel_row * dilation_h;
+//                for output_rows := 0 to output_h-1 do begin
+//                  //fillchar(d_col[0], output_w *sizeof(single), 0);
+//                  if (input_row>=0) and (input_row < height) then begin
+//                      input_col := -pad_w+kernel_col * dilation_w;
+//                      for output_col := 0 to output_w-1 do begin
+//                          if (input_col>=0) and (input_col < width) then
+//                               d_col[output_col] := d_im[input_row * width+input_col]
+//                          else
+//                               d_col[output_col] := 0
+//                               ;
+//                          inc(input_col, stride_w);
+//                      end;
+//                  end
+//                  else begin
+//                      for output_col := 0 to output_w-1 do begin
+//                          d_col[output_col] := 0;
+//                      end;
+//                  end;
+//                  inc(d_col, output_w);
+//                  inc(input_row, stride_h)
+//                end
+//            end;
+//end;
 
 procedure im2col_cpu_ext(data_im: PSingle; const channels, height, width,
   kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w, dilation_h,
   dilation_w: longint; data_col: PSingle);  overload;
 var
-    output_h, output_w, channel: longint;
-    p : TMPParams;
+  output_h, output_w, channel: longint;
+  {$ifdef FPC}
+  procedure i2c_ext(idx:PtrInt; ptr:Pointer);
+  {$else}
+  i2c_ext:TThreadProcNested;
 begin
+    {$ifdef USE_TELEMETRY} if benchmark then metrics.ops.start(opIm2colExt);{$endif}
+    i2c_ext := procedure (idx:PtrInt; ptr:Pointer)
+    {$endif}
+    var
+        channel_size, kernel_row, kernel_col, kernel_size, output_col, output_rows, out_channel_size, input_row, input_col: longint;
+        d_im, d_col: PSingle;
+    begin
+        channel_size     := height * width;
+        out_channel_size := output_w * output_h;
+        kernel_size      := kernel_w * kernel_h;
+        d_im := data_im + channel_size * idx;
+        d_col := data_col + kernel_size * out_channel_size * idx;
+
+        //fillchar(d_col[0], out_channel_size * kernel_size * sizeof(single), 0);
+        for kernel_row := 0 to kernel_h -1 do
+            for kernel_col := 0 to kernel_w -1 do
+                begin
+                    input_row := -pad_h+kernel_row * dilation_h;
+                    for output_rows := 0 to output_h-1 do begin
+                      //fillchar(d_col[0], output_w *sizeof(single), 0);
+                      if (input_row>=0) and (input_row < height) then begin
+                          input_col := -pad_w+kernel_col * dilation_w;
+                          for output_col := 0 to output_w-1 do begin
+                              if (input_col>=0) and (input_col < width) then
+                                   d_col[output_col] := d_im[input_row * width+input_col]
+                              else
+                                   d_col[output_col] := 0
+                                   ;
+                              inc(input_col, stride_w);
+                          end;
+                      end
+                      else begin
+                          for output_col := 0 to output_w-1 do begin
+                              d_col[output_col] := 0;
+                          end;
+                      end;
+                      inc(d_col, output_w);
+                      inc(input_row, stride_h)
+                    end
+                end;
+    end;
+
+{$ifdef FPC}
+
+    //p : TMPParams;
+begin
+    {$ifdef USE_TELEMETRY} if benchmark then metrics.ops.start(opIm2colExt);{$endif}
+{$else}
+{$endif}
     //if (kernel_h = kernel_w)
     //   and (dilation_h = dilation_w) and (dilation_h = 1)
     //   and (pad_h = pad_w) and (stride_h=stride_w) then
@@ -282,28 +333,28 @@ begin
        //     exit
        //end;
 //    writeln('i2c');
-    {$ifdef USE_TELEMETRY} if benchmark then metrics.ops.start(opIm2colExt);{$endif}
+
     output_w := (width+2 * pad_w-(dilation_w * (kernel_w-1)+1)) div stride_w+1;
     output_h := (height+2 * pad_h-(dilation_h * (kernel_h-1)+1)) div stride_h+1;
-    p.A  :=  data_im;
-    p.B  :=  data_col;
-    p.C  :=  @output_w;
-    p.D  :=  @output_h;
-    p.E  :=  @kernel_w;
-    p.F  :=  @kernel_h;
-    p.G  :=  @pad_w;
-    p.H  :=  @pad_h;
-    p.I  :=  @stride_w;
-    p.J  :=  @stride_h;
-    p.K  :=  @dilation_w;
-    p.L  :=  @dilation_h;
-    p.M  :=  @width;
-    p.N  :=  @height;
+    //p.A  :=  data_im;
+    //p.B  :=  data_col;
+    //p.C  :=  @output_w;
+    //p.D  :=  @output_h;
+    //p.E  :=  @kernel_w;
+    //p.F  :=  @kernel_h;
+    //p.G  :=  @pad_w;
+    //p.H  :=  @pad_h;
+    //p.I  :=  @stride_w;
+    //p.J  :=  @stride_h;
+    //p.K  :=  @dilation_w;
+    //p.L  :=  @dilation_h;
+    //p.M  :=  @width;
+    //p.N  :=  @height;
     {$ifdef USE_MULTITHREADING}
-    mp2.&for(i2c_ext,0, channels, @p);
+    mp2.&for(i2c_ext,0, channels{, @p});
     {$else}
     for channel:=0 to channels-1 do
-        i2c_ext(channel,@p);
+        i2c_ext(channel,{@p}nil);
     {$endif}
     {$ifdef USE_TELEMETRY} if benchmark then metrics.ops.finish(opIm2colExt);{$endif}
 end;

@@ -15,6 +15,7 @@ uses
   SysUtils, lightnet, blas, Activations;
 
 type
+  PGaussianYoloLayer = ^TLayer;
   TGaussianYoloLayer = TLayer;
 
 function make_gaussian_yolo_layer(const batch, w, h, n, total: longint; const mask: TArray<longint>; const classes, max_boxes: longint):TGaussianYoloLayer;
@@ -29,8 +30,8 @@ function compare_gaussian_yolo_class(const output: PSingle; classes, class_index
 procedure forward_gaussian_yolo_layer(var l: TGaussianYoloLayer; const state: PNetworkState);
 procedure backward_gaussian_yolo_layer(var l: TGaussianYoloLayer; const state: PNetworkState);
 procedure correct_gaussian_yolo_boxes(const dets: Pdetection; const n, w, h, netw, neth: longint; const relative, letter: boolean);
-function gaussian_yolo_num_detections(const l: TGaussianYoloLayer; const thresh: single):longint;
-function get_gaussian_yolo_detections(const l: TGaussianYoloLayer; const w, h, netw, neth: longint; const thresh: single; const map: Plongint; const relative: boolean; const dets: Pdetection; const letter: boolean):longint;
+function gaussian_yolo_num_detections(const l: PGaussianYoloLayer; const thresh: single):longint;
+function get_gaussian_yolo_detections(const l: PGaussianYoloLayer; const w, h, netw, neth: longint; const thresh: single; const map: Plongint; const relative: boolean; const dets: Pdetection; const letter: boolean):longint;
 
 {$ifdef GPU}
 procedure forward_gaussian_yolo_layer_gpu(var l: TGaussianYoloLayer; const state: PNetworkState);
@@ -56,7 +57,7 @@ begin
     result.out_h := result.h;
     result.out_c := result.c;
     result.classes := classes;
-    result.cost := TSingles.Create(1);
+//    result.cost := TSingles.Create(1);
     result.biases := TSingles.Create(total * 2);
     if assigned(mask) then
         result.mask := mask
@@ -449,7 +450,7 @@ begin
     avg_anyobj := 0;
     count := 0;
     class_count := 0;
-    l.cost[0] := 0;
+    l.cost := 0;
     for b := 0 to l.batch -1 do
         begin
             for j := 0 to l.h -1 do
@@ -682,7 +683,7 @@ begin
                     end;
     except_uc_loss := sqr(mag_array(@except_uncertainty_lost[0], l.outputs * l.batch){, 2});
     //free(except_uncertainty_lost);
-    l.cost[0] := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
+    l.cost := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
     loss := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
     uc_loss := loss-except_uc_loss;
     iou_loss := except_uc_loss-class_loss;
@@ -745,7 +746,8 @@ begin
         end
 end;
 
-function gaussian_yolo_num_detections(const l: TGaussianYoloLayer; const thresh: single):longint;
+function gaussian_yolo_num_detections(const l: PGaussianYoloLayer;
+  const thresh: single): longint;
 var
     i, n, count, obj_index:longint;
 begin
@@ -753,14 +755,14 @@ begin
     for i := 0 to l.w * l.h -1 do
         for n := 0 to l.n -1 do
             begin
-                obj_index := entry_gaussian_index(l, 0, n * l.w * l.h+i, 8);
+                obj_index := entry_gaussian_index(l^, 0, n * l.w * l.h+i, 8);
                 if l.output[obj_index] > thresh then
                     inc(count)
             end;
     exit(count)
 end;
 
-function get_gaussian_yolo_detections(const l: TGaussianYoloLayer; const w, h,
+function get_gaussian_yolo_detections(const l: PGaussianYoloLayer; const w, h,
   netw, neth: longint; const thresh: single; const map: Plongint;
   const relative: boolean; const dets: Pdetection; const letter: boolean
   ): longint;
@@ -777,24 +779,24 @@ begin
             col := i mod l.w;
             for n := 0 to l.n -1 do
                 begin
-                    obj_index := entry_gaussian_index(l, 0, n * l.w * l.h+i, 8);
+                    obj_index := entry_gaussian_index(l^, 0, n * l.w * l.h+i, 8);
                     objectness := predictions[obj_index];
                     if objectness <= thresh then
                         continue;
                     if objectness > thresh then
                         begin
-                            box_index := entry_gaussian_index(l, 0, n * l.w * l.h+i, 0);
+                            box_index := entry_gaussian_index(l^, 0, n * l.w * l.h+i, 0);
                             dets[count].bbox := get_gaussian_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w * l.h, l.yolo_point);
                             dets[count].objectness := objectness;
                             dets[count].classes := l.classes;
-                            dets[count].uc[0] := predictions[entry_gaussian_index(l, 0, n * l.w * l.h+i, 1)];
-                            dets[count].uc[1] := predictions[entry_gaussian_index(l, 0, n * l.w * l.h+i, 3)];
-                            dets[count].uc[2] := predictions[entry_gaussian_index(l, 0, n * l.w * l.h+i, 5)];
-                            dets[count].uc[3] := predictions[entry_gaussian_index(l, 0, n * l.w * l.h+i, 7)];
+                            dets[count].uc[0] := predictions[entry_gaussian_index(l^, 0, n * l.w * l.h+i, 1)];
+                            dets[count].uc[1] := predictions[entry_gaussian_index(l^, 0, n * l.w * l.h+i, 3)];
+                            dets[count].uc[2] := predictions[entry_gaussian_index(l^, 0, n * l.w * l.h+i, 5)];
+                            dets[count].uc[3] := predictions[entry_gaussian_index(l^, 0, n * l.w * l.h+i, 7)];
                             dets[count].points := longint(l.yolo_point);
                             for j := 0 to l.classes -1 do
                                 begin
-                                    class_index := entry_gaussian_index(l, 0, n * l.w * l.h+i, 9+j);
+                                    class_index := entry_gaussian_index(l^, 0, n * l.w * l.h+i, 9+j);
                                     uc_aver := (dets[count].uc[0]+dets[count].uc[1]+dets[count].uc[2]+dets[count].uc[3]) / 4.0;
                                     prob := objectness * predictions[class_index] * (1.0-uc_aver);
                                     if (prob > thresh) then

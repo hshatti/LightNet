@@ -93,7 +93,7 @@ begin
     result.CostType := costType;
     result.delta := TSingles.Create(inputs * batch);
     result.output := TSingles.Create(inputs * batch);
-    result.cost := TSingles.Create(1);
+//    result.cost := TSingles.Create(1);
     result.forward := forward_cost_layer;
     result.backward := backward_cost_layer;
   {$ifdef GPU}
@@ -142,7 +142,7 @@ begin
             l1_cpu(l.batch * l.inputs, @state.input[0], @state.truth[0], @l.delta[0], @l.output[0])
     else
         l2_cpu(l.batch * l.inputs, @state.input[0], @state.truth[0], @l.delta[0], @l.output[0]);
-    l.cost[0] := sum_array(@l.output[0], l.batch * l.inputs);
+    l.cost := sum_array(@l.output[0], l.batch * l.inputs);
     {$ifdef USE_TELEMETRY}
     if benchmark then metrics.forward.finish(l.&type);
     {$endif}

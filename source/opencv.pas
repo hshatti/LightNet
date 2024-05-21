@@ -45,13 +45,21 @@ unit opencv;
 interface
 {$ifdef FPC}
 {$if defined(MSWINDOWS)}
-  {$Linklib opencv_core2413d.dll}
-  {$LinkLib opencv_highgui2413d.dll}
-  {$LinkLib opencv_imgproc2413d.dll}
+  {$Linklib opencv_core2413.dll}
+  {$LinkLib opencv_highgui2413.dll}
+  {$LinkLib opencv_imgproc2413.dll}
+  //{$LinkLib opencv_video2413.dll}
 
 {$elseif defined(DARWIN)}
-
+  {$linklib opencv_core}
+  {$linklib opencv_highgui}
+  {$linklib opencv_imgproc}
+  //{$linklib opencv_video}
 {$else}
+  {$linklib opencv_core}
+  {$linklib opencv_highgui}
+  {$linklib opencv_imgproc}
+  //{$linklib opencv_video}
 {$endif}
 
 {$endif}
@@ -546,7 +554,7 @@ destination images (or ROIs), allowing them to vary independently.
       imageId : pointer;
       tileInfo : PIplTileInfo;
       imageSize : longint;
-      imageData : PChar;
+      imageData : PByte;
       widthStep : longint;
       BorderMode : array[0..3] of longint;
       BorderConst : array[0..3] of longint;

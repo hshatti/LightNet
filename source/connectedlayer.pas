@@ -146,21 +146,15 @@ end;
 
 procedure forward_connected_layer(var l: TConnectedLayer; const state: PNetworkState);
 var
-    i, m,k, n: longint;
-    a, b, c: PSingle;
+    i: longint;
 begin
     {$ifdef USE_TELEMETRY}
     if benchmark then metrics.forward.start(l.&type);
     {$endif}
 
     fill_cpu(l.outputs * l.batch, 0, l.output, 1);
-    m := l.batch;
-    k := l.inputs;
-    n := l.outputs;
-    a := state.input;
-    b := l.weights;
-    c := l.output;
-    sgemm(0, 1, m, n, k, 1, a, k, b, k, 1, c, n);
+
+    sgemm(0, 1, l.batch, l.outputs, l.inputs, 1, state.input, l.inputs, l.weights, l.inputs, 1, l.output, l.outputs);
 
     if l.batch_normalize then
         begin
@@ -196,8 +190,7 @@ end;
 
 procedure backward_connected_layer(var l: TConnectedLayer; const state: PNetworkState);
 var
-    i, m, k, n: longint;
-    a, b, c: PSingle;
+    i: longint;
 begin
     gradient_array(l.output, l.outputs * l.batch, l.activation, l.delta);
     for i := 0 to l.batch -1 do
@@ -210,21 +203,21 @@ begin
             variance_delta_cpu(l.x, l.delta, l.mean, l.variance, l.batch, l.outputs, 1, l.variance_delta);
             normalize_delta_cpu(l.x, l.mean, l.variance, l.mean_delta, l.variance_delta, l.batch, l.outputs, 1, l.delta)
         end;
-    m := l.outputs;
-    k := l.batch;
-    n := l.inputs;
-    a := l.delta;
-    b := state.input;
-    c := l.weight_updates;
-    sgemm(1, 0, m, n, k, 1, a, m, b, n, 1, c, n);
-    m := l.batch;
-    k := l.outputs;
-    n := l.inputs;
-    a := l.delta;
-    b := l.weights;
-    c := state.delta;
-    if assigned(c) then
-        sgemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n)
+    //m := l.outputs;
+    //k := l.batch;
+    //n := l.inputs;
+    //a := l.delta;
+    //b := state.input;
+    //c := l.weight_updates;
+    sgemm(1, 0, l.outputs, l.inputs, l.batch, 1, l.delta, l.outputs, state.input, l.inputs, 1, l.weight_updates, l.inputs);
+    //m := l.batch;
+    //k := l.outputs;
+    //n := l.inputs;
+    //a := l.delta;
+    //b := l.weights;
+    //c := state.delta;
+    if assigned(state.delta) then
+        sgemm(0, 0, l.batch, l.inputs, l.outputs, 1, l.delta, l.outputs, l.weights, l.inputs, 1, state.delta, l.inputs)
 end;
 
 procedure denormalize_connected_layer(const l: TConnectedLayer);

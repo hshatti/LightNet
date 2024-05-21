@@ -1,14 +1,15 @@
 object Form1: TForm1
-  Left = 436
+  Left = 480
   Height = 783
-  Top = 168
+  Top = 270
   Width = 1062
   Caption = 'Form1'
   ClientHeight = 783
   ClientWidth = 1062
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   OnShow = FormShow
-  LCLVersion = '2.2.6.0'
+  LCLVersion = '3.2.0.0'
   object Memo1: TMemo
     Left = 0
     Height = 66
@@ -53,17 +54,17 @@ object Form1: TForm1
       Top = 8
       Width = 148
       Caption = 'Start Detecting Objects'
-      OnClick = Button1Click
       TabOrder = 0
+      OnClick = Button1Click
     end
     object CheckBox1: TCheckBox
       Left = 16
-      Height = 18
+      Height = 21
       Top = 88
-      Width = 148
+      Width = 160
       Caption = 'Test OpenCV Camera'
-      OnChange = CheckBox1Change
       TabOrder = 1
+      OnChange = CheckBox1Change
     end
     object Button3: TButton
       Left = 12
@@ -71,8 +72,8 @@ object Form1: TForm1
       Top = 44
       Width = 147
       Caption = 'Test OpenCL'
-      OnClick = Button3Click
       TabOrder = 2
+      OnClick = Button3Click
     end
     object Button2: TButton
       Left = 20
@@ -80,8 +81,8 @@ object Form1: TForm1
       Top = 352
       Width = 132
       Caption = 'Button2'
-      OnClick = Button2Click
       TabOrder = 3
+      OnClick = Button2Click
     end
     object TrackBar1: TTrackBar
       Left = 47
@@ -124,35 +125,31 @@ object Form1: TForm1
     end
     object Label1: TLabel
       Left = 4
-      Height = 16
+      Height = 17
       Top = 144
-      Width = 23
+      Width = 25
       Caption = 'Red'
-      ParentColor = False
     end
     object Label2: TLabel
       Left = 4
-      Height = 16
+      Height = 17
       Top = 169
-      Width = 37
+      Width = 39
       Caption = 'Green'
-      ParentColor = False
     end
     object Label3: TLabel
       Left = 4
-      Height = 16
+      Height = 17
       Top = 196
-      Width = 27
+      Width = 29
       Caption = 'Blue'
-      ParentColor = False
     end
     object Label4: TLabel
       Left = 4
-      Height = 16
+      Height = 17
       Top = 224
-      Width = 34
+      Width = 37
       Caption = 'Alpha'
-      ParentColor = False
     end
     object TrackBar4: TTrackBar
       Left = 47

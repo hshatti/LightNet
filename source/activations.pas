@@ -22,7 +22,7 @@ uses
 function stair_activate(const x:single) :single;inline;
 function hardtan_activate(const x:single):single;inline;
 function linear_activate(const x:single):single;inline;
-function logistic_activate(const x:single):single;inline;
+function logistic_activate(const x:single):single;//inline;
 function loggy_activate(const x:single):single;inline;
 function relu_activate(const x:single):single;inline;
 function relu6_activate(const x:single):single;inline;
@@ -137,14 +137,28 @@ begin
   result:=x;
 end;
 
-{$if defined(CPUX64) and defined(AVX2)}
-procedure exp_array(const dst, src:PSingle; const N:PtrInt);
+{$if defined(CPUX64) and defined(FPUAVX2)}
+procedure logistic_array(const dst, src:PSingle; const N:PtrInt);
 const
   l2e :single = 1.442695041;// log2(e);
   c0  :single = 1.00172476;
   c1  :single = 0.657636276;
   c2  :single = 0.3371894346;
+  //MAX_EXP =  8.8722839052068352E+001;
+  //MIN_EXP = -8.7336544750553102E+001;
+
+  MAX_EXP =  8.87E+001;
+  MIN_EXP = -8.73E+001;
+
+  one :array[0..7] of single = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+  zero:array[0..7] of single = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  mx  :array[0..7] of single = (MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP);
+  mn  :array[0..7] of single = (MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP );
 asm
+  sub                  rsp      , 16*2                     // making stack space to save one xmm size register
+  vmovdqu              [rsp+$00], xmm6
+  vmovdqu              [rsp+$10], xmm7
+
   vpbroadcastd  ymm3  , [rip + l2e]
   vpbroadcastd  ymm4  , [rip + c1]
   vpbroadcastd  ymm5  , [rip + c0]
@@ -154,8 +168,13 @@ asm
   jz            @rem
 
 @while:
-
-  vmulps        ymm1  , ymm3        , [src]
+  vxorps        ymm0  , ymm0        , ymm0              // zero
+  vsubps        ymm1  , ymm0        , [src]             // -src
+  vcmpgeps      ymm6  , ymm1        , [rip + mx]
+  vcmpleps      ymm7  , ymm1        , [rip + mn]
+  vblendvps     ymm1  , ymm1 , [rip + mx], ymm6
+  vblendvps     ymm1  , ymm1 , [rip + mn], ymm7
+  vmulps        ymm1  , ymm3        , ymm1
   vroundps      ymm2  , ymm1        , 1
   vsubps        ymm1  , ymm1        , ymm2
   vcvtps2dq     ymm0  , ymm2
@@ -164,7 +183,14 @@ asm
   vpslld        ymm0  , ymm0        , 23
   vfmadd213ps   ymm1  , ymm2        , ymm5
   vpaddd        ymm0  , ymm0        , ymm1
-  vmovups       [dst] , ymm0
+  vaddps        ymm1  , ymm0        , [rip + one]       // 1 +exp(-src)
+  vrcpps        ymm1  , ymm1                            // 1/(1+exp(-src))
+  //vpcmpeqd      ymm0  , ymm0        , ymm0              // set ymm0 to to 0xffffffff
+  //vpandn        ymm6  , ymm6        , ymm0              // ymm6 := not ymm6
+  //vpandn        ymm7  , ymm7        , ymm0              // ymm6 := not ymm6
+  //vblendvps     ymm1  , ymm1  , [rip+one] , ymm6
+  //vblendvps     ymm1  , ymm1  , [rip+zero] , ymm7
+  vmovups       [dst] , ymm1
   add           src   , 32
   add           dst   , 32
   dec           r11
@@ -173,7 +199,14 @@ asm
   and           N   , 7
   jz            @done
 @rem:
-  vmulss        xmm1  , xmm3        , dword [src]
+
+  vpxor         xmm0  , xmm0        , xmm0
+  vsubss        xmm1  , xmm0        , dword [src]              //-src
+  vcmpgeps      xmm6  , xmm1        , [rip + mx]
+  vcmpleps      xmm7  , xmm1        , [rip + mn]
+  vblendvps     xmm1  , xmm1 , [rip + mx], xmm6
+  vblendvps     xmm1  , xmm1 , [rip + mn], xmm7
+  vmulss        xmm1  , xmm3        , xmm1
   roundss       xmm2  , xmm1        , 1
   vsubss        xmm1  , xmm1        , xmm2
   vcvtps2dq     xmm0  , xmm2
@@ -182,32 +215,137 @@ asm
   vpslld        xmm0  , xmm0        , 23
   vfmadd213ss   xmm1  , xmm2        , xmm5
   vpaddd        xmm0  , xmm0        , xmm1
-  vmovss        [dst] , xmm0
+  vaddss        xmm1  , xmm0        , [rip + one]       // 1 +exp(-src)
+  vrcpss        xmm1  , xmm1        , xmm1              // 1/(1+exp(-src))
+  //vpcmpeqd      xmm0  , xmm0        , xmm0              // set ymm0 to to 0xffffffff
+  //vpandn        xmm6  , xmm6        , xmm0              // ymm6 := not ymm6
+  //vpandn        xmm7  , xmm7        , xmm0              // ymm6 := not ymm6
+  //vblendvps     xmm1  , xmm1  , [rip+one] , xmm6
+  //vblendvps     xmm1  , xmm1  , [rip+zero]  , xmm7
+  vmovss        dword [dst] , xmm1
   add           src   , 4
   add           dst   , 4
   dec           N
   jnz           @rem
 @done:
+  vmovdqu              xmm6     , [rsp+$00]
+  vmovdqu              xmm7     , [rsp+$10]
+  add                  rsp      , 16*2                     // restoring stack
 end;
 
-procedure logistic_array(const dst,src:PSingle; const N:longint);
-var i:longint;
-begin
-  for i:=0 to N-1 do
-      dst[i] := 1/(1 + exp(-src[i]))
+procedure SiLU_array(const dst, sigmoid, src:PSingle; const N:PtrInt);
+const
+  l2e :single = 1.442695041;// log2(e);
+  c0  :single = 1.00172476;
+  c1  :single = 0.657636276;
+  c2  :single = 0.3371894346;
+  //MAX_EXP =  8.8722839052068352E+001;
+  //MIN_EXP = -8.7336544750553102E+001;
+
+  MAX_EXP =  8.87E+001;
+  MIN_EXP = -8.73E+001;
+
+  one :array[0..7] of single = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+  zero:array[0..7] of single = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  mx  :array[0..7] of single = (MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP);
+  mn  :array[0..7] of single = (MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP );
+asm
+  sub                  rsp      , 16*2                     // making stack space to save one xmm size register
+  vmovdqu              [rsp+$00], xmm6
+  vmovdqu              [rsp+$10], xmm7
+
+  vpbroadcastd  ymm3  , [rip + l2e]
+  vpbroadcastd  ymm4  , [rip + c1]
+  vpbroadcastd  ymm5  , [rip + c0]
+
+  mov           r11   , N
+  shr           r11   , 3
+  jz            @rem
+
+@while:
+  vxorps        ymm0  , ymm0        , ymm0              // zero
+  vsubps        ymm1  , ymm0        , [src]             // -src
+  vcmpgeps      ymm6  , ymm1        , [rip + mx]
+  vcmpleps      ymm7  , ymm1        , [rip + mn]
+  vblendvps     ymm1  , ymm1 , [rip + mx], ymm6
+  vblendvps     ymm1  , ymm1 , [rip + mn], ymm7
+  vmulps        ymm1  , ymm3        , ymm1
+  vroundps      ymm2  , ymm1        , 1
+  vsubps        ymm1  , ymm1        , ymm2
+  vcvtps2dq     ymm0  , ymm2
+  vpbroadcastd  ymm2  , [rip + c2]
+  vfmadd213ps   ymm2  , ymm1        , ymm4
+  vpslld        ymm0  , ymm0        , 23
+  vfmadd213ps   ymm1  , ymm2        , ymm5
+  vpaddd        ymm0  , ymm0        , ymm1
+  vaddps        ymm1  , ymm0        , [rip + one]       // 1 +exp(-src)
+  vrcpps        ymm1  , ymm1                            // 1/(1+exp(-src))
+  //vpcmpeqd      ymm0  , ymm0        , ymm0              // set ymm0 to to 0xffffffff
+  //vpandn        ymm6  , ymm6        , ymm0              // ymm6 := not ymm6
+  //vpandn        ymm7  , ymm7        , ymm0              // ymm6 := not ymm6
+  //vblendvps     ymm1  , ymm1  , [rip+one] , ymm6
+  //vblendvps     ymm1  , ymm1  , [rip+zero] , ymm7
+  vmovups       [sigmoid] , ymm1
+  vmulps        ymm1      , ymm1    , [src]
+  vmovups       [dst]     , ymm1
+  add           src       , 32
+  add           sigmoid   , 32
+  add           dst       , 32
+  dec           r11
+  jnz           @while
+
+  and           N   , 7
+  jz            @done
+@rem:
+
+  vpxor         xmm0  , xmm0        , xmm0
+  vsubss        xmm1  , xmm0        , dword [src]              //-src
+  vcmpgeps      xmm6  , xmm1        , [rip + mx]
+  vcmpleps      xmm7  , xmm1        , [rip + mn]
+  vblendvps     xmm1  , xmm1 , [rip + mx], xmm6
+  vblendvps     xmm1  , xmm1 , [rip + mn], xmm7
+  vmulss        xmm1  , xmm3        , xmm1
+  roundss       xmm2  , xmm1        , 1
+  vsubss        xmm1  , xmm1        , xmm2
+  vcvtps2dq     xmm0  , xmm2
+  vmovss        xmm2  , [rip + c2]
+  vfmadd213ss   xmm2  , xmm1        , xmm4
+  vpslld        xmm0  , xmm0        , 23
+  vfmadd213ss   xmm1  , xmm2        , xmm5
+  vpaddd        xmm0  , xmm0        , xmm1
+  vaddss        xmm1  , xmm0        , [rip + one]       // 1 +exp(-src)
+  vrcpss        xmm1  , xmm1        , xmm1              // 1/(1+exp(-src))
+  //vpcmpeqd      xmm0  , xmm0        , xmm0              // set ymm0 to to 0xffffffff
+  //vpandn        xmm6  , xmm6        , xmm0              // ymm6 := not ymm6
+  //vpandn        xmm7  , xmm7        , xmm0              // ymm6 := not ymm6
+  //vblendvps     xmm1  , xmm1  , [rip+one] , xmm6
+  //vblendvps     xmm1  , xmm1  , [rip+zero]  , xmm7
+  vmovss               dword [sigmoid] , xmm1
+  vmulss               xmm1            , xmm1 ,   dword [src]
+  vmovss               [dst]           , xmm1
+  add                  src             , 4
+  add                  sigmoid         , 4
+  add                  dst             , 4
+  dec                  N
+  jnz                  @rem
+@done:
+  vmovdqu              xmm6            , [rsp+$00]
+  vmovdqu              xmm7            , [rsp+$10]
+  add                  rsp             , 16*2                     // restoring stack
 end;
+
 {$else}
 
-procedure logistic_array(const dst,src:PSingle; const N:longint);local;
+procedure logistic_array(const dst,src:PSingle; const N:longint);inline;
 var i:longint;
 begin
   for i:=0 to N-1 do
       dst[i] := 1/(1 + exp(-src[i]))
 end;
-
 {$endif}
 
-function logistic_activate(const x:single):single;inline;
+
+function logistic_activate(const x:single):single;//inline;
 begin
   result := 1/(1 + exp(-x))
 end;
@@ -291,7 +429,7 @@ asm
   vcomiss           xmm0  , dword [x]
   jbe               @skip
   vmulss            xmm3  , xmm1  ,  dword [x]
-  vmovss            [x]   , xmm3
+  vmovss            dword [x]   , xmm3
 @skip:
   add               x     , 4
   dec               N
@@ -550,29 +688,29 @@ end;
 
 // todo SIMD activate_array
 
-  procedure logistic(const f,t :PtrInt; const p:pointer=nil);
-  var i : PtrInt;
-     a:PMPParams absolute p;
-     x:Psingle;
-  begin
-    x:=a.A;
-    //{$if defined(CPUX64) and defined(AVX2)}
-    //inc(x, f);
-    //logistic_array(x, x, t-f+1);
-    //{$else}
-    for i:=f to t do
-        x[i] := logistic_activate(x[i]);
-    //{$endif}
-  end;
+procedure logistic(const f,t :PtrInt; const p:pointer=nil);
+var i : PtrInt;
+   a:PMPParams absolute p;
+   x:Psingle;
+begin
+  x:=a.A;
+  //{$if defined(CPUX64) and defined(AVX2)}
+  inc(x, f);
+  logistic_array(x, x, t-f+1);
+  //{$else}
+  //for i:=f to t do
+  //    x[i] := logistic_activate(x[i]);
+  //{$endif}
+end;
 
-  procedure leaky(const f,t:PtrInt; const p:pointer=nil);
-  var
-     a:PMPParams absolute p;
-     x:PSingle;
-  begin
-    x:=a.A;
-    leaky_array(x + f,t-f+1);
-  end;
+procedure leaky(const f,t:PtrInt; const p:pointer=nil);
+var
+   a:PMPParams absolute p;
+   x:PSingle;
+begin
+  x:=a.A;
+  leaky_array(x + f,t-f+1);
+end;
 
 
 procedure activate_array(const x: PSingle; const n: longint;
@@ -619,8 +757,7 @@ end;
       output := a.C;
 
       {$if defined(CPUX64) and defined(FPUAVX2)}
-      logistic_array(output_sigmoid+f, x+f, t-f+1);
-      smulvv(output+f, x+f, output_sigmoid+f, t-f+1);
+      SiLU_array(output+f, output_sigmoid+f, x+f, t-f+1);
       {$else}
       for i := f to t do
         begin
@@ -632,6 +769,7 @@ end;
       {$endif}
   end;
 
+// SWISH aka SiLU
 procedure activate_array_swish(const x: Psingle; const n: longint;
   output_sigmoid, output: Psingle);
 var
@@ -998,29 +1136,55 @@ end;
 //  if length(x)=0 then exit;
 //  activate_array(PSingle(@x[0]), n, a);
 //end;
-
+const N=299;EPS=0.19;
 var
     a, b, c:TArray<single>;
+    diff,f1,f2,f3,f4:double;
     i: longint;
 initialization
 
-  //setlength(a,11);
-  //setlength(b,length(a));
-  //setlength(c,length(a));
-  //writeln(exp(single(ln(Single(MaxSingle)))));
-  //filldword(a[0],length(a), longword(single(87.7)));
+
+
+  //setLength(a,N+N+1);
+  //setLength(b,Length(a));
+  //setLength(c,length(a));
   //
   //for i:=0 to high(a) do
-  //  b[i]:=exp(a[i]);
-  //exp_array(@c[0],@a[0], length(a));
+  //  a[i]:=i-N ;
   //
+  //
+  //logistic_array(@c[0],@a[0], length(a));
+  //
+  //for i:=0 to high(a) do begin
+  //      b[i] := logistic_activate(a[i])
+  //end;
+  //
+  //write('      ','id':3, ': B');write(' ~ C');write('id':3, ': ');writeln('B ~ C');
   //for i:=0 to high(a) do
   //begin
-  //  if i mod 2 > 0 then
-  //      writeln('      ',i:3, ': ',b[i],' ~ ',c[i],'  ',100*abs(c[i]-b[i])/b[i]:3:3,'%')
-  //  else
-  //    write(i:3, ': ',b[i],' ~ ',c[i],'  ',100*abs(c[i]-b[i])/b[i]:3:3,'%      ');
+  //  if i mod 2 > 0 then begin
+  //      write('      ',i-N:3, ': ',b[i]);
+  //      f1:=c[i];
+  //      f2:=b[i];
+  //      if f2<>0 then
+  //        diff:=100*abs(f1-f2) / f2
+  //      else
+  //        diff:=0;
+  //      write(' ~ ',c[i]);writeln('  ',diff:3:3,'% ',boolToStr(diff<eps,'T','F'))
+  //  end
+  //  else begin
+  //      write(i-N:3, ': ');
+  //      f1:=c[i];
+  //      f2:=b[i];
+  //      if f2<>0 then
+  //        diff:=100*abs(f1-f2) / f2
+  //      else
+  //        diff:=0;
+  //      write(b[i],' ~ ',c[i]);write('  ',diff:3:3,'% ',boolToStr(diff<eps,'T','F'),'     ')
+  //  end
   //end;
+  //readln();
+//  //halt(0)
 
 end.
 

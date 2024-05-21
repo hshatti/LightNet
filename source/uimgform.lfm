@@ -1,12 +1,13 @@
 object ImgForm: TImgForm
-  Left = 187
+  Left = 480
   Height = 586
-  Top = 250
+  Top = 270
   Width = 838
   Caption = 'ImgForm'
   ClientHeight = 586
   ClientWidth = 838
   OnClose = FormClose
+  LCLVersion = '2.2.0.4'
   object Panel1: TPanel
     Left = 0
     Height = 28
@@ -56,11 +57,11 @@ object ImgForm: TImgForm
     Height = 558
     Top = 28
     Width = 838
-    HorzScrollBar.Page = 817
-    VertScrollBar.Page = 537
+    HorzScrollBar.Page = 815
+    VertScrollBar.Page = 535
     Align = alClient
-    ClientHeight = 537
-    ClientWidth = 817
+    ClientHeight = 535
+    ClientWidth = 815
     TabOrder = 1
     object img: TImage
       Left = 0

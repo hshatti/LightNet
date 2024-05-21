@@ -475,8 +475,7 @@ begin
     exit(l)
 end;
 
-function parse_connected(const options: TCFGSection; const params: TSizeParams
-  ): TConnectedLayer;
+function parse_connected(const options: TCFGSection; const params: TSizeParams): TConnectedLayer;
 var
     output: longint;
     activation_s: string;
@@ -492,8 +491,7 @@ begin
     //exit(l)
 end;
 
-function parse_softmax(const options: TCFGSection; const params: TSizeParams
-  ): TSoftmaxLayer;
+function parse_softmax(const options: TCFGSection; const params: TSizeParams): TSoftmaxLayer;
 var
     groups: longint;
     //result: layer;
@@ -1617,8 +1615,10 @@ begin
     net.delta_rolling_std[0] := 0;
     net.seen[0] := 0;
     net.cur_iteration[0] := 0;
+{$ifdef GPU}
     net.cuda_graph_ready[0] := 0;
     net.use_cuda_graph := options.getInt('use_cuda_graph', 0, true);
+{$endif}
     net.loss_scale := options.getFloat( 'loss_scale', 1, true);
     net.dynamic_minibatch := options.getInt('dynamic_minibatch', 0, true);
     net.optimized_memory := options.getInt('optimized_memory', 0, true);
@@ -1872,10 +1872,7 @@ begin
         raise Exception.Create('Config file has no sections');
     net := make_network(sections.count-1);
     net.gpu_index := -1;
-    if batch > 0 then   // could params.train := batch<=0
-        params.train := false
-    else
-        params.train := true;
+    params.train := batch<=0;
     options := sections.Sections[0];
     if not is_network(options) then
         raise Exception.Create('First section must be [net] or [network]');
@@ -1942,101 +1939,103 @@ begin
             options := sections.Sections[i];
             l := Default(TLayer);
             lt := string_to_layer_type(options.typeName);
-            if lt = ltCONVOLUTIONAL then
-                l := parse_convolutional(options, params)
-            else
-                if lt = ltLOCAL then
-                    l := parse_local(options, params)
-            else
-                if lt = ltACTIVE then
-                    l := parse_activation(options, params)
-            else
-                if lt = ltRNN then
-                    l := parse_rnn(options, params)
-            else
-                if lt = ltGRU then
-                    l := parse_gru(options, params)
-            else
-                if lt = ltLSTM then
-                    l := parse_lstm(options, params)
-            else
-                if lt = ltConvLSTM then
-                    l := parse_conv_lstm(options, params)
-            else
-                if lt = ltHISTORY then
-                    l := parse_history(options, params)
-            else
-                if lt = ltCRNN then
-                    l := parse_crnn(options, params)
-            else
-                if lt = ltCONNECTED then
-                    l := parse_connected(options, params)
-            else
-                if lt = ltCROP then
-                    l := parse_crop(options, params)
-            else
-                if lt = ltCOST then
+            case lt of
+               ltCONVOLUTIONAL :
+                    l := parse_convolutional(options, params);
+
+               ltLOCAL :
+                    l := parse_local(options, params);
+
+               ltACTIVE :
+                    l := parse_activation(options, params);
+
+               ltRNN :
+                    l := parse_rnn(options, params);
+
+               ltGRU :
+                    l := parse_gru(options, params);
+
+               ltLSTM :
+                    l := parse_lstm(options, params);
+
+               ltConvLSTM :
+                    l := parse_conv_lstm(options, params);
+
+               ltHISTORY :
+                    l := parse_history(options, params);
+
+               ltCRNN :
+                    l := parse_crnn(options, params);
+
+               ltCONNECTED :
+                    l := parse_connected(options, params);
+
+               ltCROP :
+                    l := parse_crop(options, params);
+
+               ltCOST :
                     begin
                         l := parse_cost(options, params);
                         l.keep_delta_gpu := true
-                    end
-            else
-                if lt = ltREGION then
+                    end;
+
+               ltREGION :
                     begin
                         l := parse_region(options, params);
                         l.keep_delta_gpu := true
-                    end
-            else
-                if lt = ltYOLO then
+                    end;
+
+               ltYOLO :
                     begin
                         l := parse_yolo(options, params);
                         l.keep_delta_gpu := true
-                    end
-            else
-                if lt = ltGaussianYOLO then
+                    end;
+               ltISEG :
+                    l := parse_iseg(options, params);
+               ltGaussianYOLO :
                     begin
                         l := parse_gaussian_yolo(options, params);
                         l.keep_delta_gpu := true
-                    end
-            else
-                if lt = ltDETECTION then
-                    l := parse_detection(options, params)
-            else
-                if lt = ltSOFTMAX then
+                    end;
+
+               ltDETECTION :
+                    l := parse_detection(options, params);
+
+               ltSOFTMAX :
                     begin
                         l := parse_softmax(options, params);
                         net.hierarchy := l.softmax_tree;
                         l.keep_delta_gpu := true
-                    end
-            else
-                if lt = ltCONTRASTIVE then
+                    end;
+
+               ltCONTRASTIVE :
                     begin
                         l := parse_contrastive(options, params);
                         l.keep_delta_gpu := true
-                    end
-            else
-                if lt = ltNORMALIZATION then
-                    l := parse_normalization(options, params)
-            else
-                if lt = ltBATCHNORM then
-                    l := parse_batchnorm(options, params)
-            else
-                if lt = ltMAXPOOL then
-                    l := parse_maxpool(options, params)
-            else
-                if lt = ltLOCAL_AVGPOOL then
-                    l := parse_local_avgpool(options, params)
-            else
-                if lt = ltREORG then
-                    l := parse_reorg(options, params)
-            else
-                if lt = ltREORG_OLD then
-                    l := parse_reorg_old(options, params)
-            else
-                if lt = ltAVGPOOL then
-                    l := parse_avgpool(options, params)
-            else
-                if lt = ltROUTE then
+                    end;
+
+               ltNORMALIZATION :
+                    l := parse_normalization(options, params);
+
+               ltBATCHNORM :
+                    l := parse_batchnorm(options, params);
+
+               ltMAXPOOL :
+                    l := parse_maxpool(options, params);
+
+               ltLOCAL_AVGPOOL :
+                    l := parse_local_avgpool(options, params);
+
+               ltREORG :
+                    l := parse_reorg(options, params);
+
+               ltREORG_OLD :
+                    l := parse_reorg_old(options, params);
+
+               ltAVGPOOL :
+                    l := parse_avgpool(options, params);
+
+               ltROUTE :
                     begin
                         l := parse_route(options, params);
                         for k := 0 to l.n -1 do
@@ -2045,40 +2044,40 @@ begin
                                 if count >= last_stop_backward then
                                     net.layers[l.input_layers[k]].keep_delta_gpu := true
                             end
-                    end
-            else
-                if lt = ltUPSAMPLE then
-                    l := parse_upsample(options, params, net)
-            else
-                if lt = ltSHORTCUT then
+                    end;
+
+               ltUPSAMPLE :
+                    l := parse_upsample(options, params, net);
+
+               ltSHORTCUT :
                     begin
                         l := parse_shortcut(options, params, net);
                         net.layers[count-1].use_bin_output := false;
                         net.layers[l.index].use_bin_output := false;
                         if count >= last_stop_backward then
                             net.layers[l.index].keep_delta_gpu := true
-                    end
-            else
-                if lt = ltScaleChannels then
+                    end;
+
+               ltScaleChannels :
                     begin
                         l := parse_scale_channels(options, params, net);
                         net.layers[count-1].use_bin_output := false;
                         net.layers[l.index].use_bin_output := false;
                         net.layers[l.index].keep_delta_gpu := true
-                    end
-            else
-                if lt = ltSAM then
+                    end;
+
+               ltSAM :
                     begin
                         l := parse_sam(options, params, net);
                         net.layers[count-1].use_bin_output := false;
                         net.layers[l.index].use_bin_output := false;
                         net.layers[l.index].keep_delta_gpu := true
-                    end
-            else
-                if lt = ltIMPLICIT then
-                    l := parse_implicit(options, params, net)
-            else
-                if lt = ltDROPOUT then
+                    end;
+
+               ltIMPLICIT :
+                    l := parse_implicit(options, params, net);
+
+               ltDROPOUT :
                     begin
                         l := parse_dropout(options, params);
                         l.output := net.layers[count-1].output;
@@ -2088,9 +2087,9 @@ begin
                         l.delta_gpu := net.layers[count-1].delta_gpu;
                         l.keep_delta_gpu := 1
                     {$endif}
-                    end
-            else
-                if lt = ltEMPTY then
+                    end;
+
+               ltEMPTY :
                     begin
                         empty_layer := Default(TLayer);
                         l := empty_layer;
@@ -2099,7 +2098,8 @@ begin
                         l.h := params.h; l.out_h := params.h;
                         l.c := params.c; l.out_c := params.c;
                         l.batch := params.batch;
-                        l.inputs := params.inputs; l.outputs := params.inputs;
+                        l.inputs := params.inputs;
+                        l.outputs := params.inputs;
                         l.output := net.layers[count-1].output;
                         l.delta := net.layers[count-1].delta;
                         l.forward := empty_func;
@@ -2112,9 +2112,10 @@ begin
                         l.backward_gpu := empty_func;
                     {$endif}
                         writeln(ErrOutput, 'empty')
-                    end
-            else
+                    end;
+              else
                 writeln(ErrOutput, 'Type not recognized: ', options.typeName);
+            end;
             if show_receptive_field then
                 begin
                     dilation := max(1, l.dilation);

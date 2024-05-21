@@ -61,7 +61,7 @@ procedure test_dunion();
 procedure test_dintersect();
 procedure test_box();
 procedure do_nms(const boxes: TArray<TBox>; const probs: TSingles2D; const total, classes: longint; const thresh: single);
-procedure diounms_sort(const dets: PDetection; total:longint; const classes: longint; const thresh: single; const nms_kind: TNMSKind; const beta1: single);
+procedure diounms_sort(const dets: TArray<TDetection>; total:longint; const classes: longint; const thresh: single; const nms_kind: TNMSKind; const beta1: single);
 
 implementation
 
@@ -112,7 +112,7 @@ begin
         begin
             for i := 0 to total -1 do
                 s[i].class_id := k;
-            TTools<TSortableBBox>.QuickSort(@s[0], 0, total-1, nms_comparator);
+            TTools<TSortableBBox>.QuickSort(s, 0, total-1, nms_comparator);
             for i := 0 to total -1 do
                 begin
                     if probs[s[i].index][k] = 0 then
@@ -170,7 +170,7 @@ begin
     for i := 0 to total -1 do
         dets[i].sort_class := -1;
 
-    TTools<TDetection>.QuickSort(@dets[0],0, total-1, nms_comparator_v3);
+    TTools<TDetection>.QuickSort(dets,0, total-1, nms_comparator_v3);
     for i := 0 to total -1 do
         begin
             if dets[i].objectness = 0 then
@@ -219,7 +219,7 @@ begin
         begin
             for i := 0 to total -1 do
                 dets[i].sort_class := k;
-            TTools<TDetection>.QuickSort(@dets[0], 0, total-1, nms_comparator_v3);
+            TTools<TDetection>.QuickSort(dets, 0, total-1, nms_comparator_v3);
             for i := 0 to total -1 do
                 begin
                     if dets[i].prob[k] = 0 then
@@ -1030,7 +1030,7 @@ begin
         end
 end;
 
-procedure diounms_sort(const dets: PDetection; total:longint; const classes: longint; const thresh: single; const nms_kind: TNMSKind; const beta1: single);
+procedure diounms_sort(const dets: TArray<TDetection>; total:longint; const classes: longint; const thresh: single; const nms_kind: TNMSKind; const beta1: single);
 var
     i, j, k: longint;
     swap: TDetection;
@@ -1056,7 +1056,7 @@ begin
         begin
             for i := 0 to total -1 do
                 dets[i].sort_class := k;
-            TTools<TDetection>.QuickSort(@dets[0],0 , total-1, nms_comparator_v3);
+            TTools<TDetection>.QuickSort(dets,0 , total-1, nms_comparator_v3);
             for i := 0 to total -1 do
                 begin
                     if dets[i].prob[k] = 0 then
