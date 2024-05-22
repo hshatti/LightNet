@@ -26,7 +26,7 @@ type
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure imgMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
-    class function ShowImage(const im: TImageData; const Modal: boolean): TImgForm; static;
+    class function ShowImage(const im: TImageData; const ACaption:string ='';const Modal: boolean=true): TImgForm; static;
   private
 
   public
@@ -72,8 +72,8 @@ begin
   //  ScrollBox1.ScaleBy(11,10);
 end;
 
-class function TImgForm.ShowImage(const im: TImageData; const Modal: boolean
-  ): TImgForm;
+class function TImgForm.ShowImage(const im: TImageData; const ACaption: string;
+  const Modal: boolean): TImgForm;
 var bmp:TBitmap;
 begin
   result:=TImgForm.Create(nil);
@@ -87,6 +87,10 @@ begin
   result.img.AutoSize:=true;
   Application.ProcessMessages;
   result.img.Stretch:=true;
+  if ACaption='' then
+    result.Caption:= format('c[%d] x h[%d] x w[%d]',[im.c, im.h, im.w])
+  else
+    result.Caption:=ACaption;
   if Modal then
     result.ShowModal
   else

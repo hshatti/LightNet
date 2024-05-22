@@ -82,11 +82,11 @@ begin
   l:=@net.layers[idx];
   write(#13,idx:4,' Detecting ... ',(100*idx/net.n):1:1,'%  - ', get_layer_string(l.&type),'                     ');
   //Form1.Memo1.Lines[Form1.Memo1.lines.Count-1]:=format('%4d Detecting ... %.1f%% - %s',[idx,(100*idx/net.n), get_layer_string(l.&type)]);
-  ////if l.&type=ltCONVOLUTIONAL then begin
-  ////  norm:=get_convolutional_image(l^);
-  ////  normalize_image2(norm);
-  ////  TImgForm.ShowImage( collapse_image_layers(norm,1),true);
-  ////end;
+  //if l.&type=ltCONVOLUTIONAL then begin
+  //  norm:=get_convolutional_image(l^);
+  //  normalize_image2(norm);
+  //  TImgForm.ShowImage( collapse_image_layers(norm,0), format('n[%d] [%d X %d X %d], filters[%d X %d], strides[%d X %d]',[l.n, l.out_c, l.out_h, l.out_w, l.size, l.size , l.stride_x, l.stride_y]));
+  //end;
   Application.ProcessMessages;
   //if net.n-1 = idx then begin
   //    writeln(format('%d x %d x %d , outputs = %d , classes = %d', [l.w, l.h, l.n, l.outputs, l.classes]));
@@ -138,65 +138,67 @@ begin
 
     j:=0;
     isDetecting := true;
-    while isDetecting do begin
-      if Form1.CheckBox1.Checked  then begin
-      {$ifdef USE_OPENCV}
-        if not assigned(cap) then  begin
-            cap := cvCreateCameraCapture(CV_CAP_ANY);
-            if not assigned(cap) then
-                raise exception.Create('ERROR : Cannot open device');
-            cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_WIDTH,1280);
-            cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_HEIGHT,720);
-            if assigned(bmp) then
-              bmp.SetSize(640, 480);
-            im.data:=nil;
-        end;
-        im2 := cvQueryFrame(cap);
-        if not assigned(im.data) then
-            im := make_image(im2.width, im2.height, im2.nChannels);
-        for c:=0 to im.c-1 do
-          for y:=0 to im.h-1 do
-            for xx:= 0 to im.w-1 do
-            im.data[(c*im.h + y)*im.w + xx] := im2.imageData[(y*im.w + xx)*im.c + 2-c]/$ff;
-      {$endif}
-      end
-      else begin
+    try
+      while isDetecting do begin
+        if Form1.CheckBox1.Checked  then begin
         {$ifdef USE_OPENCV}
-        if assigned(cap) then begin
-            cvReleaseCapture(@cap);
-            cap := nil
-        end;
+          if not assigned(cap) then  begin
+              cap := cvCreateCameraCapture(CV_CAP_ANY);
+              if not assigned(cap) then
+                  raise exception.Create('ERROR : Cannot open device');
+              cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_WIDTH,1280);
+              cvSetCaptureProperty(cap,CV_CAP_PROP_FRAME_HEIGHT,720);
+              if assigned(bmp) then
+                bmp.SetSize(640, 480);
+              im.data:=nil;
+          end;
+          im2 := cvQueryFrame(cap);
+          if not assigned(im.data) then
+              im := make_image(im2.width, im2.height, im2.nChannels);
+          for c:=0 to im.c-1 do
+            for y:=0 to im.h-1 do
+              for xx:= 0 to im.w-1 do
+              im.data[(c*im.h + y)*im.w + xx] := im2.imageData[(y*im.w + xx)*im.c + 2-c]/$ff;
         {$endif}
-        input:=filenames[j];
-        im := load_image_color('data/'+input+'.jpg', 0, 0);
+        end
+        else begin
+          {$ifdef USE_OPENCV}
+          if assigned(cap) then begin
+              cvReleaseCapture(@cap);
+              cap := nil
+          end;
+          {$endif}
+          input:=filenames[j];
+          im := load_image_color('data/'+input+'.jpg', 0, 0);
+        end;
+        sized := letterbox_image(im, net.w, net.h);
+        X := sized.data;
+        time := clock();
+        network_predict(net, X);
+        writeln(format(#13#10#13#10'%s: Predicted in %.0f[ms]', [input, (clock()-time)/1000000]));
+        nboxes := 0;
+        dets := get_network_boxes(@net, im.w, im.h, thresh, hier_thresh, nil, true,  @nboxes,true);
+        //writeln(format('output[%d][%dX%dX%d]',[l.outputs,l.n, l.h, l.w])+#13#10, l.output.toString(' ',min(200,l.outputs)));
+        if (nms<>0) and assigned(dets) then
+            do_nms_sort(dets, nboxes, l.classes, nms);
+
+        writeln(format('  thersh[%.2f] Detections [%d]', [thresh, Length(dets)]));
+        draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 0.5 ,true);
+        Form1.Image1.Picture.Graphic:=imageToBitmap(im,bmp);
+        application.ProcessMessages;
+        inc(j);
+        if j=length(filenames) then j:=0;
+
+        writeln(sLineBreak+sLineBreak, metrics.print);
+
       end;
-      sized := letterbox_image(im, net.w, net.h);
-      X := sized.data;
-      time := clock();
-      network_predict(net, X);
-      writeln(format(#13#10#13#10'%s: Predicted in %.0f[ms]', [input, (clock()-time)/1000000]));
-      nboxes := 0;
-      dets := get_network_boxes(@net, im.w, im.h, thresh, hier_thresh, nil, true,  @nboxes,true);
-      //writeln(format('output[%d][%dX%dX%d]',[l.outputs,l.n, l.h, l.w])+#13#10, l.output.toString(' ',min(200,l.outputs)));
-      if (nms<>0) and assigned(dets) then
-          do_nms_sort(dets, nboxes, l.classes, nms);
-
-      writeln(format('  thersh[%.2f] Detections [%d]', [thresh, Length(dets)]));
-      draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, 0.5 ,true);
-      Form1.Image1.Picture.Graphic:=imageToBitmap(im,bmp);
-      application.ProcessMessages;
-      inc(j);
-      if j=length(filenames) then j:=0;
-
-      writeln(sLineBreak+sLineBreak, metrics.print);
-
-    end;
-    free_network(net);
+    finally
+      free_network(net);
     {$ifdef USE_OPENCV}
-    if assigned(cap) then
-        cvReleaseCapture(@cap)
+      if assigned(cap) then
+          cvReleaseCapture(@cap)
     {$endif}
-
+    end
     //free_detections(dets, nboxes);
     //exit;
     //if outfile<>'' then
@@ -215,7 +217,7 @@ end;
 
 { TForm1 }
 
-const filenames: TArray<string> = ['kite','dog','horses','person'];
+const filenames: TArray<string> = ['kite','dog','horses','person','giraffe','eagle','startrek1'];
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   if isDetecting then begin

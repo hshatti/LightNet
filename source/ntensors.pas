@@ -17,7 +17,7 @@ unit ntensors;
 {$WRITEABLECONST ON}
 
 interface
-uses TypInfo;
+uses TypInfo, variants, Generics.Defaults;
 
 type
 
@@ -31,32 +31,47 @@ type
 
   { TSingleTensor }
 
-  TSingleTensor=record
-  private 
+  TTensor<T>=record
+  private
+
+  Type
+    PT = ^T;
+    TUnaryFunc    = function (const b:T):T;
+    TBinaryFunc   = function (const a,b:T):T;
+    TBinaryOp     = procedure(var dst: T ; const src:T);
+    TCastIOp      = function (const v:SizeInt):T;
+    TTernaryOp    = procedure (var dst:T; const src1, src2:T);
+    TUnaryVecFunc = function (const src:PT; const stride:SizeInt):T;
+    TBinaryVecFunc= function (const src1:PT; const stride1:SizeInt; const src2:PT; const stride2:SizeInt):T;
+    TUnaryVecOp   = procedure (var dst:PT; const dstStride; const src:PT; const srcStride:SizeInt; const ALPHA:T);
+    TBinaryVecOp  = procedure (var dst:PT; dstStride: SizeInt; const src1:PT; const stride1:sizeInt; const src2:PT; stride2:SizeInt);
+  var
     FShape:TSizes;
     FDimSizes:TSizes;
-    FStrides: TSizes;  
+    FStrides: TSizes;
     function GetDimensions: SizeInt;
-    function GetValue(idx: TSizes): Single;
+    function GetValue(idx: TSizes): T;
     procedure SetShape(AValue: TSizes);
     procedure SetStrides(AValue: TSizes);
-    procedure SetValue(idx: TSizes; AValue: Single);
-  
+    procedure SetValue(idx: TSizes; AValue: T);
+    class procedure Permute(var dst: TTensor<T>; const src: TTensor<T>; const newShape,Indecies,newIndecies, newArrange: TSizes; const lvl:SizeInt); static;
+    class function subPrint(const src:TTensor<T>; const Indecies:TSizes;const lvl:SizeInt):string; static;
+    class function product(const e:TSizes):SizeInt;static;
   public
-    Data:PSingle;
+    Data:PT;
     property Dimensions : SizeInt read GetDimensions;
     property Shape:TSizes read FShape write SetShape;
     property Strides:TSizes read FStrides write SetStrides;
-    property Value[idx:TSizes]:Single read GetValue write SetValue;
+    property Value[idx:TSizes]:T read GetValue write SetValue;
     constructor Create(const newShape:TSizes);overload;
     procedure FreeData();
     //procedure convertTo<C>(var Trnsor:TTensor<C>);
-    procedure Fill(const start:Single; const interval:Single=0; const stride:SizeInt=1);
-    procedure FillRange(const start:Single; const Finish:Single);
-    procedure setAll(const val:Single; const stride:SizeInt);
+    procedure Fill(const start:T; const interval:T; const stride:SizeInt=1);
+    procedure FillGradient(const start:T; const Finish:T);
+    procedure setAll(const val:T; const stride:SizeInt);
     procedure reShape(const newShape:TSizes);
-    function transpose(const newArrange:TSizes; dstTensor:Pointer=nil):TSingleTensor;
-    procedure CopyTo(const dest:PSingle; N:SizeInt; const dstStride:SizeInt=1; const srcStride:SizeInt=1);
+    function Transpose(const newArrange:TSizes; dstTensor:Pointer=nil):TTensor<T>;
+    procedure CopyTo(var dest:PT; N:SizeInt; const dstStride:SizeInt=1; const srcStride:SizeInt=1);
     function getIndex(const idx:TSizes):SizeInt;inline;
     function Size(): SizeInt;
     function byteSize(): SizeInt;
@@ -64,138 +79,286 @@ type
     procedure UnSqueeze(const newDim: TSizes);
     function toString(const separator:string=','):string;
     function fromString(const separator:string=','):string;
-    
-    procedure Add(const srcVector:PSingle;  N:SizeInt=-1; const dstStride:SizeInt=1; const srcStride:SizeInt=1); overload;
-    procedure Subtract(const srcVector:PSingle;  N:SizeInt=-1; const dstStride:SizeInt=1; const srcStride:SizeInt=1); overload;
-    procedure Multiply(const srcVector:PSingle;  N:SizeInt=-1; const dstStride:SizeInt=1; const srcStride:SizeInt=1); overload;
-    procedure Divide(const srcVector:PSingle;  N:SizeInt=-1; const dstStride:SizeInt=1;const srcStride:SizeInt=1); overload;
 
-    procedure Add(const src:Single; N:SizeInt=-1; const dstStride:SizeInt=1); overload;
-    procedure Subtract(const src:Single; N:SizeInt=-1; const dstStride:SizeInt=1); overload;
-    procedure Multiply(const src:Single; N:SizeInt=-1; const dstStride:SizeInt=1); overload;
-    procedure Divide(const src:Single; N:SizeInt=-1; const dstStride:SizeInt=1); overload;
+    procedure Add(const srcVector:PT;  N:SizeInt=-1; const dstStride:SizeInt=1; const srcStride:SizeInt=1); overload;
+    procedure Subtract(const srcVector:PT;  N:SizeInt=-1; const dstStride:SizeInt=1; const srcStride:SizeInt=1); overload;
+    procedure Multiply(const srcVector:PT;  N:SizeInt=-1; const dstStride:SizeInt=1; const srcStride:SizeInt=1); overload;
+    procedure Divide(const srcVector:PT;  N:SizeInt=-1; const dstStride:SizeInt=1;const srcStride:SizeInt=1); overload;
 
-    procedure axpy(const a:single; const y:PSingle; N:SizeInt=-1);
-    function dot(const y:PSingle; N:SizeInt=-1; const dstStride:SizeInt=1; const srcStride:SizeInt=1):single;
-    
+    procedure Add(const src:T; N:SizeInt=-1; const dstStride:SizeInt=1); overload;
+    procedure Subtract(const src:T; N:SizeInt=-1; const dstStride:SizeInt=1); overload;
+    procedure Multiply(const src:T; N:SizeInt=-1; const dstStride:SizeInt=1); overload;
+    procedure Divide(const src:T; N:SizeInt=-1; const dstStride:SizeInt=1); overload;
 
-    procedure Normalize(const mean,stdDev:Single);
-    function Sum(const stride:SizeInt=1):Single;
-    function mean(const stride:SizeInt=1):Single;
-    function Variance(const stride:SizeInt=1):Single;
-    function stdDev(const stride:SizeInt=1):Single;
-    function MSE(const vector: pointer; N:SizeInt):Single;
-    function Max(const stride:SizeInt=1):Single;
-    function Min(const stride:SizeInt=1):Single;
+    procedure axpy(const a:T; const y:PT; N:SizeInt=-1);
+    function dot(const y:PT; N:SizeInt=-1; const dstStride:SizeInt=1; const srcStride:SizeInt=1):T;
+
+
+    procedure Normalize(const mean,stdDev:T);
+    function Sum(const stride:SizeInt=1):T;
+    function mean(const stride:SizeInt=1):T;
+    function Variance(const stride:SizeInt=1):T;
+    function stdDev(const stride:SizeInt=1):T;
+    function MSE(const vector: pointer; N:SizeInt):T;
+    function Max(const stride:SizeInt=1):T;
+    function Min(const stride:SizeInt=1):T;
     function argMin(const stride:SizeInt=1):SizeInt;
     function argMax(const stride:SizeInt=1):SizeInt;
-    class procedure map(func:TMapFunc<Single>; var dest:TSingleTensor);static ;
+    class procedure map(func:TMapFunc<T>; const src:TTensor<T>; var dst:TTensor<T>);static ;
 
-    procedure LerpValues(const _min,_max, _min2, _max2:Single);
+    procedure LerpValues(const _min,_max, _min2, _max2:T);
 
-    class procedure Concat(var dst:TSingleTensor; const tensor:TArray<TSingleTensor>);            overload;static;    
-    class procedure Concat(var dst:TSingleTensor; const vector:TArray<Pointer>; const N:TSizes);  overload;static;
+    class operator Implicit(arr:TArray<T>):TTensor<T>;
+    class operator Implicit(src:TTensor<T>):TArray<T>;
+    class var
+      Plus, Minus, Times, Division    : TBinaryFunc;
+      sqr, sqrt, exp, log : TUnaryFunc;
+      CastI :TCastIOp;
 
-    class operator Implicit(arr:TArray<Single>):TSingleTensor;
-    class operator Implicit(src:TSingleTensor):TArray<Single>;
+      addvv, subvv, mulvv, divvv : TBinaryVecOp;
+      addvs, subvs, mulvs, divvs : TUnaryVecOp;
+      sumv:TUnaryVecFunc;
+      dotv:TBinaryVecFunc;
+      sqrv, sqrtv, expv, logv : TUnaryVecOp;
 
-  end;
-
-  { TTensorView }
-
-  TSingleTensorView = record
-    type
-      TViewRange=array of TSizes;
-  private
-    FTensor : TSingleTensor;
-    FRange  : TViewRange;
-  public
-    function toString(const seperator:string=','):string;
-    procedure CopyTo(var dest: TSingleTensor ;const range:TViewRange=nil);
-  end;
+      toStr: function(const v:T):string;
+      Compare: function(const a,b: T):SizeInt;
+   end;
 
 
 implementation
 
+function _Plus(const a, b:single):single;overload;inline;
+begin
+  result:= a + b
+end;
 
+function _Plus(const a, b:Double):Double;overload;inline;
+begin
+  result:= a + b
+end;
+
+function _Plus(const a, b:int32):int32;overload;inline;
+begin
+  result:= a + b
+end;
+
+function _Plus(const a, b:int64):int64;overload;inline;
+begin
+  result:= a + b
+end;
+
+function _Minus(const a, b:single):single;overload;inline;
+begin
+  result:= a - b
+end;
+
+function _Minus(const a, b:Double):Double;overload;inline;
+begin
+  result:= a - b
+end;
+
+function _Minus(const a, b:int32):int32;overload;inline;
+begin
+  result:= a - b
+end;
+
+function _Minus(const a, b:int64):int64;overload;inline;
+begin
+  result:= a - b
+end;
+
+function _Times(const a, b:single):single;overload;inline;
+begin
+  result:= a * b
+end;
+
+function _Times(const a, b:Double):Double;overload;inline;
+begin
+  result:= a * b
+end;
+
+function _Times(const a, b:int32):int32;overload;inline;
+begin
+  result:= a * b
+end;
+
+function _Times(const a, b:int64):int64;overload;inline;
+begin
+  result:= a * b
+end;
+
+function _Division(const a, b:single):single;overload;inline;
+begin
+  result:= a / b
+end;
+
+function _Division(const a, b:Double):Double;overload;inline;
+begin
+  result:= a / b
+end;
+
+function _Division(const a, b:int32):int32;overload;inline;
+begin
+  result:= a div b
+end;
+
+function _Division(const a, b:int64):int64;overload;inline;
+begin
+  result:= a div b
+end;
+
+function _Sqr(const a:single):single;overload;inline;
+begin
+  result:= a * a
+end;
+
+function _Sqr(const a:Double):Double;overload;inline;
+begin
+  result:= a * a
+end;
+
+function _Sqr(const a:int32):int32;overload;inline;
+begin
+  result:= a * a
+end;
+
+function _Sqr(const a:int64):int64;overload;inline;
+begin
+  result:= a * a
+end;
+
+
+function _Sqrt(const a:single):single;overload;inline;
+begin
+  result:= sqrt(a)
+end;
+
+function _Sqrt(const a:Double):Double;overload;inline;
+begin
+  result:= sqrt(a)
+end;
+
+function Casts(const a:SizeInt):single;overload;inline;
+begin
+  result:= a
+end;
+
+function Castd(const a:SizeInt):Double;overload;inline;
+begin
+  result:= a
+end;
+
+function Casti32(const a:SizeInt):int32;overload;inline;
+begin
+  result:= a
+end;
+
+function Casti64(const a:SizeInt):int64;overload;inline;
+begin
+  result:= a
+end;
+
+function _toStr(const v:Single):string;overload;inline;
+begin
+  str(v:3:3,result)
+end;
+
+function _toStr(const v:Double):string;overload;inline;
+begin
+  str(v:3:3,result)
+end;
+
+function _toStr(const v:int32):string;overload;inline;
+begin
+  str(v:3,result)
+end;
+
+function _toStr(const v:int64):string;overload;inline;
+begin
+  str(v:3,result)
+end;
 
 
 { TTensor }
 
-function TSingleTensor.GetValue(idx: TSizes): Single;
+function TTensor<T>.GetValue(idx: TSizes): T;
 begin
   result := Data[getIndex(idx)]
 end;
 
-function TSingleTensor.GetDimensions: SizeInt;
+function TTensor<T>.GetDimensions: SizeInt;
 begin
   result := length(FShape)
 end;
 
-procedure TSingleTensor.SetShape(AValue: TSizes);
+procedure TTensor<T>.SetShape(AValue: TSizes);
 begin
   if FShape=AValue then Exit;
   FShape:=AValue;
 end;
 
-procedure TSingleTensor.SetStrides(AValue: TSizes);
+procedure TTensor<T>.SetStrides(AValue: TSizes);
 begin
   if FStrides=AValue then Exit;
   FStrides:=AValue;
 end;
 
-procedure TSingleTensor.SetValue(idx: TSizes; AValue: Single);
+procedure TTensor<T>.SetValue(idx: TSizes; AValue: T);
 begin
   data[getIndex(idx)] := AValue;
 end;
 
-constructor TSingleTensor.Create(const newShape: TSizes);
+constructor TTensor<T>.Create(const newShape: TSizes);
 begin
   reshape(newShape);
-  Data:=AllocMem(Size*Sizeof(Single))
+  Data:=AllocMem(Size()*Sizeof(T))
 end;
 
-procedure TSingleTensor.FreeData();
-var d:PSingle;
+procedure TTensor<T>.FreeData();
+var d:PT;
 begin
   d:=Data;
   Data:=nil;
   Freemem(d);
 end;
 
-//procedure TSingleTensor.convertTo<C>(var Trnsor: TTensor<C>);
+//procedure TTensor<T>.convertTo<C>(var Trnsor: TTensor<C>);
 //begin
 //
 //end;
 
-procedure TSingleTensor.Fill(const start: Single; const interval: Single;
+procedure TTensor<T>.Fill(const start: T; const interval: T;
   const stride: SizeInt);
 var i:SizeInt;
 begin
   assert(stride>0);
   i:=0;
-  while i<Size() do begin
-     Data[i]:=start + i* interval;
-     inc(i,stride)
-  end;
+  if Interval=Default(T) then
+    for i:=0 to Size()-1 do Data[i]:=start
+  else
+    while i<Size() do begin
+       Data[i]:=Plus(start , Times(CastI(i) , interval));
+       inc(i,stride)
+    end;
 end;
 
-procedure TSingleTensor.FillRange(const start:Single; const Finish:Single);
-var i:SizeInt; interval:Double;
+procedure TTensor<T>.FillGradient(const start:T; const Finish:T);
+var i:SizeInt; interval:T;
 begin
-  interval := (finish-start) / size();
+  interval := Division(Minus(finish, start) , CastI(size()));
   for i:=0 to Size()-1 do
-     data[i]:=start + interval*i
+     data[i]:=Plus(start , Times(interval , CastI(i)))
 end;
 
-procedure TSingleTensor.setAll(const val: Single; const stride: SizeInt);
+procedure TTensor<T>.setAll(const val: T; const stride: SizeInt);
 var i:SizeInt;
 begin
   for i:=0 to Size()-1 do
     Data[i*stride]:=val
 end;
 
-procedure TSingleTensor.reShape(const newShape: TSizes);
+procedure TTensor<T>.reShape(const newShape: TSizes);
 var i, Dim:SizeInt;
 begin
   Assert(Length(newShape)>0);
@@ -215,23 +378,11 @@ begin
   end;
 end;
 
-function TSingleTensor.transpose(const newArrange: TSizes; dstTensor: Pointer): TSingleTensor;
+function TTensor<T>.Transpose(const newArrange: TSizes; dstTensor: Pointer): TTensor<T>;
 var j,y,x: SizeInt;
   newShape, newIndecies, indecies:TSizes;
-  dst : ^TSingleTensor absolute dstTensor;
+  dst : ^TTensor<T> absolute dstTensor;
 
-  procedure Permute(const lvl:SizeInt);
-  var i:SizeInt;
-  begin
-    for i:=0 to FShape[lvl]-1 do begin
-        indecies[lvl]:=i;
-        newIndecies[newArrange[lvl]] := i;
-        if lvl<high(FShape) then
-            Permute(lvl+1)
-         else
-            dst.Data[dst.getIndex(newIndecies)]:= Data[getIndex(indecies)]
-    end;
-  end;
 begin
   setLength(newShape, length(newArrange));
   setLength(newIndecies, length(newArrange));
@@ -241,23 +392,23 @@ begin
      newShape[newArrange[j]]:=FShape[j];
 
   if not assigned(dst) then begin
-    result:=TSingleTensor.Create(newShape);
+    result:=TTensor<T>.Create(newShape);
     dst:=@result;
   end
   else begin
     dst.reShape(newShape);
   end;
-  permute(0);
+  permute(result,Self,newShape, Indecies, newIndecies, newArrange, 0);
   result := dst^
 end;
 
-procedure TSingleTensor.CopyTo(const dest: PSingle; N: SizeInt;
+procedure TTensor<T>.CopyTo(var dest: PT; N: SizeInt;
   const dstStride: SizeInt; const srcStride: SizeInt);
 var
   i: SizeInt;
 begin
   if (dstStride=1) and (srcStride=1) then begin
-    move(data^, dest^, N*sizeOf(Single));
+    move(data^, dest^, N*sizeOf(T));
     exit
   end;
 
@@ -265,7 +416,7 @@ begin
     dest[i*dstStride] := data[i*srcStride]
 end;
 
-function TSingleTensor.getIndex(const idx: TSizes): SizeInt;
+function TTensor<T>.getIndex(const idx: TSizes): SizeInt;
 var i:SizeInt;
 begin
   Assert(length(FShape)=Length(Idx), 'idx and Tensor shape must be identical.');
@@ -275,7 +426,7 @@ begin
   inc(result, idx[high(idx)])
 end;
 
-function TSingleTensor.Size(): SizeInt;
+function TTensor<T>.Size(): SizeInt;
 var i:SizeInt;
 begin
   if not assigned(FShape) then exit(0);
@@ -284,312 +435,341 @@ begin
     result:=result * FShape[i];
 end;
 
-function TSingleTensor.byteSize(): SizeInt;
+function TTensor<T>.byteSize(): SizeInt;
 begin
-  result := Sizeof(Single) * Size()
+  result := Sizeof(T) * Size()
 end;
 
-function TSingleTensor.ElementSize(): SizeInt;
+function TTensor<T>.ElementSize(): SizeInt;
 begin
-  result:=SizeOf(Single)
+  result:=SizeOf(T)
 end;
 
-procedure TSingleTensor.UnSqueeze(const newDim: TSizes);
+procedure TTensor<T>.UnSqueeze(const newDim: TSizes);
 var s:TSizes;
 begin
-  Insert(newDim, FShape,0)
+  Insert(newDim, FShape,0);
+  reAllocMem(Data, Size()*SizeOf(T));
 end;
 
-function TSingleTensor.toString(const separator: string): string;
+function TTensor<T>.toString(const separator: string): string;
 var indecies:TSizes;
-  function subPrint(const lvl : SizeInt):string;
-  var i:SizeInt; s:string;
-  begin
-    result :='';
-    if lvl < High(FShape) then begin
-      for i:=0 to FShape[lvl]-1 do begin
-        indecies[lvl]:=i;
-        result:=result + ', '+subPrint(lvl+1);
-      end
-    end
-    else begin
-      for i:=0 to FShape[lvl]-1 do begin
-        indecies[lvl]:=i;
-        str(data[getIndex(indecies)]:3:3,s);
-        result := result +', '+s
-      end;
-    end;
-    delete(result,1,1);
-    result := '['+result +']'+sLineBreak
-  end;
 begin
   result := 'Empty Tensor []';
   if not Assigned(FShape) or not Assigned(Data) then exit();
   setLength(Indecies, length(FShape));
-  result := subPrint(0)
+  result := subPrint(Self, Indecies,0)
 end;
 
-function TSingleTensor.fromString(const separator: string): string;
+function TTensor<T>.fromString(const separator: string): string;
 begin
   //todo fromString
 end;
 
-procedure TSingleTensor.Add(const srcVector: PSingle; N: SizeInt;
+procedure TTensor<T>.Add(const srcVector: PT; N: SizeInt;
   const dstStride: SizeInt; const srcStride: SizeInt);
 var
   i:SizeInt;
 begin
   if N<=0 then N:=Size();
   for i:=0 to N-1 do
-    data[i*dstStride] :=  data[i*dstStride] + srcVector[i*srcStride]
+    data[i*dstStride] :=  Plus(data[i*dstStride] , srcVector[i*srcStride])
 end;
 
-procedure TSingleTensor.Subtract(const srcVector: PSingle; N: SizeInt;
+procedure TTensor<T>.Subtract(const srcVector: PT; N: SizeInt;
   const dstStride: SizeInt; const srcStride: SizeInt);
 var
   i:SizeInt;
 begin
   if N<=0 then N:=Size();
   for i:=0 to N-1 do
-    data[i*dstStride] :=  data[i*dstStride] - srcVector[i*srcStride]
+    data[i*dstStride] :=  Minus(data[i*dstStride] , srcVector[i*srcStride])
 end;
 
-procedure TSingleTensor.Multiply(const srcVector: PSingle; N: SizeInt;
+procedure TTensor<T>.Multiply(const srcVector: PT; N: SizeInt;
   const dstStride: SizeInt; const srcStride: SizeInt);
 var
   i:SizeInt;
 begin
   if N<=0 then N:=Size();
   for i:=0 to N-1 do
-    data[i*dstStride] :=  data[i*dstStride] * srcVector[i*srcStride]
+    data[i*dstStride] :=  Times(data[i*dstStride] , srcVector[i*srcStride])
 end;
 
-procedure TSingleTensor.Divide(const srcVector: PSingle; N: SizeInt;
+procedure TTensor<T>.Divide(const srcVector: PT; N: SizeInt;
   const dstStride: SizeInt; const srcStride: SizeInt);
 var
   i:SizeInt;
 begin
   if N<=0 then N:=Size();
   for i:=0 to N-1 do
-    data[i*dstStride] :=  data[i*dstStride] / srcVector[i*srcStride]
+    data[i*dstStride] :=  Division(data[i*dstStride] , srcVector[i*srcStride])
 end;
 
-procedure TSingleTensor.Add(const src: Single; N: SizeInt; const dstStride: SizeInt);
+procedure TTensor<T>.Add(const src: T; N: SizeInt; const dstStride: SizeInt);
 var
   i:SizeInt;
 begin
   if N<=0 then N:=Size();
   for i:=0 to N-1 do
-    data[i*dstStride] :=  data[i*dstStride] + src
+    data[i*dstStride] :=  Plus(data[i*dstStride] , src)
 end;
 
-procedure TSingleTensor.Subtract(const src: Single; N: SizeInt; const dstStride: SizeInt
+procedure TTensor<T>.Subtract(const src: T; N: SizeInt; const dstStride: SizeInt
   );
 var
   i:SizeInt;
 begin
   if N<=0 then N:=Size();
   for i:=0 to N-1 do
-    data[i*dstStride] :=  data[i*dstStride] - src
+    data[i*dstStride] :=  Minus(data[i*dstStride] , src)
 end;
 
-procedure TSingleTensor.Multiply(const src: Single; N: SizeInt; const dstStride: SizeInt
+procedure TTensor<T>.Multiply(const src: T; N: SizeInt; const dstStride: SizeInt
   );
 var
   i:SizeInt;
 begin
   if N<=0 then N:=Size();
   for i:=0 to N-1 do
-    data[i*dstStride] :=  data[i*dstStride] * src
+    data[i*dstStride] :=  Times(data[i*dstStride] , src)
 end;
 
-procedure TSingleTensor.Divide(const src: Single; N: SizeInt; const dstStride: SizeInt);
+procedure TTensor<T>.Divide(const src: T; N: SizeInt; const dstStride: SizeInt);
 var
   i:SizeInt;
 begin
   if N<=0 then N:=Size();
   for i:=0 to N-1 do
-    data[i*dstStride] :=  data[i*dstStride] / src
+    data[i*dstStride] :=  Division(data[i*dstStride] , src)
 end;
 
-function TSingleTensor.dot(const y: PSingle; N:SizeInt; const dstStride:SizeInt; const srcStride:SizeInt):single;
+function TTensor<T>.dot(const y: PT; N:SizeInt; const dstStride:SizeInt; const srcStride:SizeInt):T;
 var i:SizeInt;
 begin
   if N < 0 then
     N := Size();
-  result := 0;
+  result := Default(T);
   for i := 0 to N-1 do
-    Data[i*dstStride] := Data[i*dstStride] * y[i*srcStride]
-   
+    Data[i*dstStride] := Times(Data[i*dstStride] , y[i*srcStride])
+
 end;
 
-procedure TSingleTensor.Normalize(const mean, stdDev: Single);
+procedure TTensor<T>.Normalize(const mean, stdDev: T);
 var
   i:SizeInt;
 begin
   for i:=0 to Size()-1 do
-    data[i] :=  (data[i] - mean)/stdDev
+    data[i] :=  Division(Minus(data[i] , mean), stdDev)
 end;
 
-function TSingleTensor.Sum(const stride: SizeInt): Single;
+class procedure TTensor<T>.Permute(var dst: TTensor<T>; const src: TTensor<T>; const newShape,Indecies,newIndecies, newArrange: TSizes; const lvl:SizeInt);
+var i:SizeInt;
+begin
+    for i:=0 to src.FShape[lvl]-1 do begin
+        indecies[lvl]:=i;
+        newIndecies[newArrange[lvl]] := i;
+        if lvl<high(src.FShape) then
+            Permute(dst, src, newShape, Indecies, newIndecies, newArrange, lvl+1)
+         else
+            dst.Data[dst.getIndex(newIndecies)]:= src.Data[src.getIndex(indecies)]
+    end;
+end;
+
+function TTensor<T>.Sum(const stride: SizeInt): T;
 var
   i:SizeInt;
 begin
   result:=data[0];
   for i:=1 to Size()-1 do
-    result := result + data[i*Stride]
+    result := Plus(result , data[i*Stride])
 end;
 
-function TSingleTensor.mean(const stride: SizeInt): Single;
+function TTensor<T>.mean(const stride: SizeInt): T;
 begin
-  result := sum(stride)/Size()
+  result := Division(sum(stride), CastI(Size()))
 end;
 
-function TSingleTensor.Variance(const stride: SizeInt): Single;
+function TTensor<T>.Variance(const stride: SizeInt): T;
 var
-  mea:Single;
+  mea:T;
   i:SizeInt;
 begin
   mea:=Mean(stride);
   for i:=0 to Size()-1 do
-     result := sqr(data[i*stride] - mea);
-  result := result / Size()
+     result := sqr(Minus(data[i*stride] , mea));
+  result := Division(result , CastI(Size()))
 end;
 
-function TSingleTensor.stdDev(const stride: SizeInt): Single;
+function TTensor<T>.stdDev(const stride: SizeInt): T;
 begin
   result := sqrt(variance)
 end;
 
-function TSingleTensor.MSE(const vector: pointer; N: SizeInt): Single;
+class function TTensor<T>.subPrint(const src:TTensor<T>; const Indecies: TSizes; const lvl: SizeInt): string;
+var i:SizeInt;var s:string;
+begin
+    result :='';
+    if lvl < High(src.FShape) then begin
+      for i:=0 to src.FShape[lvl]-1 do begin
+        indecies[lvl]:=i;
+        result:=result + ', '+subPrint(src, indecies, lvl+1);
+      end
+    end
+    else begin
+      for i:=0 to src.FShape[lvl]-1 do begin
+        indecies[lvl]:=i;
+        s:=toStr(src.data[src.getIndex(indecies)]);
+        result := result +', '+s
+      end;
+    end;
+    delete(result,1,1);
+    result := '['+result +']'+sLineBreak
+end;
+
+class function TTensor<T>.product(const e: TSizes): SizeInt;
 var i:SizeInt;
-  p:PSingle absolute vector;
-  diff :Single;
 begin
-  diff := 0;
+  if e=nil then exit;
+  e[0] := result;
+  for i:=1 to High(e) do
+     result:=result*e[i]
+end;
+
+function TTensor<T>.MSE(const vector: pointer; N: SizeInt): T;
+var i:SizeInt;
+  p:PT absolute vector;
+  diff :T;
+begin
+  diff := Default(T);
   for i:=0 to N-1 do
-     diff := diff + sqr(Data[i]-p[i]);
-  result :=diff / N
+     diff := Plus(diff , sqr(Minus(Data[i], p[i])));
+  result :=Division(diff , CastI(N))
 end;
 
-function TSingleTensor.Max(const stride: SizeInt): Single;
+function TTensor<T>.Max(const stride: SizeInt): T;
 var
   i: SizeInt;
 begin
   result :=data[0];
   for i:=1 to Size()-1 do
-     if data[i]>result then
+     if Compare(data[i], result)> 0 then
          result := data[i]
 end;
 
-function TSingleTensor.Min(const stride: SizeInt): Single;
+function TTensor<T>.Min(const stride: SizeInt): T;
 var
   i: SizeInt;
 begin
   result :=data[0];
   for i:=1 to Size()-1 do
-     if data[i]<result then
+     if Compare(data[i], result)< 0 then
          result := data[i]
 end;
 
-function TSingleTensor.argMin(const stride: SizeInt): SizeInt;
+function TTensor<T>.argMin(const stride: SizeInt): SizeInt;
 var
-  _max:Single;
+  _min:T;
   i: SizeInt;
 begin
-  _max :=data[0];
+  _min :=data[0];
   for i:=1 to Size()-1 do
-     if data[i]>result then begin
-         _max := data[i];
+     if Compare(data[i], _min)< 0 then begin
+         _min := data[i];
          result :=i
      end;
 end;
 
-procedure TSingleTensor.axpy(const a: single; const y: PSingle; N:SizeInt);
-var i:SizeInt;
-begin
-  if N<0 then 
-    N:=Size();
-  for i := 0 to N-1 do
-    Data[i] := a * Data[i] + y[i]
-end;
-
-function TSingleTensor.argMax(const stride: SizeInt): SizeInt;
+function TTensor<T>.argMax(const stride: SizeInt): SizeInt;
 var
-  _min :Single;
+  _max :T;
   i :SizeInt;
 begin
-  _min := data[0];
+  _max := data[0];
   for i:=1 to Size()-1 do
-     if data[i]<result then begin
-       _min := data[i];
+     if Compare(data[i], _max)> 0 then begin
+       _max := data[i];
        result :=i
    end;
 end;
 
-class procedure TSingleTensor.map(func: TMapFunc<Single>; var dest: TSingleTensor);
+procedure TTensor<T>.axpy(const a: T; const y: PT; N:SizeInt);
+var i:SizeInt;
+begin
+  if N<0 then
+    N:=Size();
+  for i := 0 to N-1 do
+    Data[i] := Plus(Times(a , Data[i]) , y[i])
+end;
+
+class procedure TTensor<T>.map(func: TMapFunc<T>; const src: TTensor<T>;
+  var dst: TTensor<T>);
 var
   i: SizeInt;
 begin
-  for i:=0 to dest.Size()-1 do
-     dest.data[i]:=func(dest.data[i],i)
+  for i:=0 to src.Size()-1 do
+     dst.data[i]:=func(src.data[i],i)
 end;
 
-procedure TSingleTensor.LerpValues(const _min, _max, _min2, _max2: Single);
-var r:double;
+procedure TTensor<T>.LerpValues(const _min, _max, _min2, _max2: T);
+var r:T;
   i:SizeInt;
 begin
-  r:=(_max2 - _min2)/(_max - _min);
+  r:=Division(Minus(_max2 , _min2), Minus(_max , _min));
   for i:=0 to Size()-1 do
-     Data[i]:= _min2 + r*(data[i] - _min)
+     Data[i]:= Plus(_min2 , Times(r, Minus(data[i] , _min)))
 end;
 
-class procedure TSingleTensor.Concat(var dst: TSingleTensor; const tensor: TArray<
-  TSingleTensor>);
-begin
 
-end;
-
-class procedure TSingleTensor.Concat(var dst: TSingleTensor; const vector: TArray<
-  Pointer>; const N: TSizes);
-begin
-
-end;
-
-class operator TSingleTensor.Implicit(arr: TArray<Single>): TSingleTensor;
+class operator TTensor<T>.Implicit(arr: TArray<T>): TTensor<T>;
 begin
   result.reshape([length(arr)]);
-  result.data := AllocMem(length(arr)*sizeof(Single));
-  move(arr[0], result.data[0], length(arr)*sizeof(Single))
+  result.data := AllocMem(length(arr)*sizeof(T));
+  move(arr[0], result.data[0], length(arr)*sizeof(T))
 end;
 
-class operator TSingleTensor.Implicit(src: TSingleTensor): TArray<Single>;
+class operator TTensor<T>.Implicit(src: TTensor<T>): TArray<T>;
 var i: SizeInt;
 begin
   setLength(result, src.Size());
-  move(src.data[0], result[0],src.size()*sizeof(Single))
+  move(src.data[0], result[0],src.size()*sizeof(T))
 end;
 
-{ TTensorView }
 
-// todo implement TTensorView
-
-function TSingleTensorView.toString(const seperator: string):string;
-begin                                             
-
-  result := FTensor.toString(seperator)
-  
-end;
-
-procedure TSingleTensorView.CopyTo(var dest: TSingleTensor; const range: TViewRange);
-begin
-
-end;
-
-var ten, ten2:TSingleTensor  ;
+var ten, ten2:TTensor<Single>  ;
 initialization
 
- ten  := TSingleTensor.Create([3,3,3]);
+ TTensor<Single>.Plus:=_Plus;
+ TTensor<Double>.Plus:=_Plus;
+ TTensor<Int32>.Plus:=_Plus;
+ TTensor<Int64>.Plus:=_Plus;
+
+ TTensor<Single>.Minus:=_Minus;
+ TTensor<Double>.Minus:=_Minus;
+ TTensor<Int32>.Minus:=_Minus;
+ TTensor<Int64>.Minus:=_Minus;
+
+ TTensor<Single>.Times:=_Times;
+ TTensor<Double>.Times:=_Times;
+ TTensor<Int32>.Times:=_Times;
+ TTensor<Int64>.Times:=_Times;
+
+ TTensor<Single>.Division:=_Division;
+ TTensor<Double>.Division:=_Division;
+ TTensor<Int32>.Division:=_Division;
+ TTensor<Int64>.Division:=_Division;
+
+ TTensor<Single>.CastI:=Casts;
+ TTensor<Double>.CastI:=Castd;
+ TTensor<Int32>.CastI:=Casti32;
+ TTensor<Int64>.CastI:=Casti64;
+
+ TTensor<Single>.toStr:=_ToStr;
+ TTensor<Double>.toStr:=_ToStr;
+ TTensor<Int32>.toStr:=_ToStr;
+ TTensor<Int64>.toStr:=_ToStr;
+
+ ten  := TTensor<single>.Create([3,3,3]);
  ten.fill(1,1);
 
  ten2 := ten.transpose([0,2,1]);

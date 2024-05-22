@@ -60,8 +60,7 @@
           <Other>
             <CustomOptions Value="-CfAVX2
 -dUSE_MULTITHREADING
--dUSE_TELEMETRY
--dUSE_OPENCV"/>
+-dUSE_TELEMETRY"/>
             <OtherDefines Count="7">
               <Define0 Value="OPENBLAS_USE64BITINT"/>
               <Define1 Value="OPENBLAS"/>
@@ -138,7 +137,8 @@
       <CustomOptions Value="-CfAVX2
 -dOPENBLAS
 -dUSE_MULTITHREADING
--dUSE_TELEMETRY"/>
+-dUSE_TELEMETRY
+-dUSE_OPENCV"/>
       <OtherDefines Count="8">
         <Define0 Value="OPENBLAS_USE64BITINT"/>
         <Define1 Value="OPENBLAS"/>

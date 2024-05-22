@@ -728,7 +728,7 @@ end;
 procedure TOpenCL.SetActivePlatformId(AValue: integer);
 var i:integer; dt:cl_device_type;
 begin
-  if FActivePlatform=FPlatforms[AValue] then Exit;
+  if (FActivePlatform=FPlatforms[AValue]) or (AValue>High(FPlatforms)) then Exit;
   if AValue>High(FPlatforms) then raise Exception.Create('Platform index out of bounds!');
   FActivePlatform:=FPlatforms[AValue];
   FErr:=clGetDeviceIDs(FActivePlatform,getCL_Device_Type(FDeviceType),0,nil,@FDeviceCount);  CheckError;

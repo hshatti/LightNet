@@ -7,7 +7,7 @@ object ImgForm: TImgForm
   ClientHeight = 586
   ClientWidth = 838
   OnClose = FormClose
-  LCLVersion = '2.2.0.4'
+  LCLVersion = '3.2.0.0'
   object Panel1: TPanel
     Left = 0
     Height = 28

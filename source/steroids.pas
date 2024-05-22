@@ -231,7 +231,7 @@ begin
   inherited;
   OTCount:=0;
   //InitCriticalSection(FCriticalSection);
-  Setlength(Pool,GetSystemThreadCount);
+  Setlength(Pool,ceil(GetSystemThreadCount*0.9));
   for i:=0 to High(Pool) do begin
     Pool[i]:=TOthread.Create(false);
     Pool[i].FID:=i;
