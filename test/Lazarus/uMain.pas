@@ -269,6 +269,7 @@ begin
     if not SameValue(a[i],b[i],0) then exit(i)
 end;
 
+{$ifdef FPUAVX2}
 procedure xpays_pas( x,y:PSingle; const a: single; const count:PtrInt);
 asm
 @while:
@@ -282,7 +283,7 @@ asm
   dec         count
   jnz         @while
 end;
-
+{$endif}
 
 type
 
@@ -483,10 +484,13 @@ begin
     // For each col...
     for idx := 0 to N-1 do
       // For each element in the row/col pair...
+      {$ifdef FPUAVX2}
       xpays_pas(@C[row * N], @B[idx * N], A[row * N + idx], N);
-      //for col := 0 to N-1 do
-      //  // Accumulate the partial results
-      //  C[row * N + col] += A[row * N + idx] * B[idx * N + col];
+      {$else}
+      for col := 0 to N-1 do
+        // Accumulate the partial results
+        C[row * N + col] += A[row * N + idx] * B[idx * N + col];
+      {$endif}
 end;
 
 {$PointerMath on}
