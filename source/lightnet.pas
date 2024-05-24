@@ -1451,6 +1451,9 @@ procedure free_layer_custom(var l: TLayer; const keep_cudnn_desc: boolean);
 procedure readLayer(const p:PSingle; const N:longint);
 
 {$ifdef MSWINDOWS}
+var
+   CPUFreq: Int64;
+   CPUFreqs : double;
 function QueryPerformanceCounter(var lpPerformanceCount: Int64): longbool;stdcall; external 'kernel32.dll';
 function QueryPerformanceFrequency(var lpFrequency: Int64): longbool;stdcall external 'kernel32.dll';
 {$endif}
@@ -1938,11 +1941,7 @@ begin
   readln
 end;
 
-{$ifdef MSWINDOWS}
-var
-   CPUFreq: Int64;
-   CPUFreqs : double;
-{$endif}
+
 function clock():clock_t;
 {$ifdef MSWINDOWS}
 {$else}

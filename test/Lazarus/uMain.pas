@@ -173,9 +173,13 @@ begin
         end;
         sized := letterbox_image(im, net.w, net.h);
         X := sized.data;
+        writeln('=======================================================================');
+        writeln(format('  Using CPUs : [%d] X %s @%.2fGhz' , [GetSystemThreadCount, string(TOPool.CPUName()), TOPool.CPUFreqMhz().max/1024 ]));
+        writeln('=======================================================================');
+
         time := clock();
         network_predict(net, X);
-        writeln(format(#13#10#13#10'%s: Predicted in %.0f[ms]', [input, (clock()-time)/1000000]));
+        writeln(format(sLineBreak+'%s: Predicted in %.0f[ms]', [input, (clock()-time)/1000000]));
         nboxes := 0;
         dets := get_network_boxes(@net, im.w, im.h, thresh, hier_thresh, nil, true,  @nboxes,true);
         //writeln(format('output[%d][%dX%dX%d]',[l.outputs,l.n, l.h, l.w])+#13#10, l.output.toString(' ',min(200,l.outputs)));
@@ -637,39 +641,40 @@ initialization
   SetCurrentDir(ExtractFilePath(ParamStr(0))+'../../../');
   {$endif}
   InitCriticalSection(semaphor);
-  if TOpenCL.Plaforms>0 then begin
-    ocl := TOpenCL.create(dtALL);
-    ocl.ActivePlatformId:=1;
-    writeln(ocl.DevicesTypeStr);
 
-    writeln('Platforms :');
-    for i:=0 to ocl.PlatformCount-1 do
-      writeln(ifthen(i=ocl.ActivePlatformId,' *','  '),ocl.PlatformName(i));
-
-    ocl.ActiveDeviceId:=0;
-    writeln(sLineBreak, sLineBreak,'Devices:');
-    for i:=0 to ocl.DeviceCount-1 do
-      writeln(ifthen(i=ocl.ActiveDeviceId,' *','  '),ocl.DeviceName(i),', ', ocl.CLDeviceDriver,' : ', ocl.CLDeviceVersion, ' Units :', ocl.ProcessorsCount,' @ ',ocl.ProcessorsFrequency,'Mhz ');
-    writeln('');
-    wis := ocl.MaxWorkItemSizes;
-    writeln('MaxWorkItemSizes = ',wis[0],', ',wis[1],', ',wis[2],', ',#13#10'MaxWorkGroupSize = ', ocl.MaxWorkGroupSize);
-    ocl.LoadFromFile(GetCurrentDir+'/source/cl_sgemm.c');
-    writeln('Build :',ocl.Build());
-    writeln(ocl.BuildLog, sLineBreak, sLineBreak, 'Kernels :', sLineBreak);
-
-    for i:=0 to ocl.KernelCount-1 do begin
-      writeln('  ',ocl.KernelInfo(i).KernelName);
-      for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
-        writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
-      writeln('');
-    end;
-  end;
+  //if TOpenCL.Plaforms>0 then begin
+  //  ocl := TOpenCL.create(dtALL);
+  //  ocl.ActivePlatformId:=1;
+  //  writeln(ocl.DevicesTypeStr);
+  //
+  //  writeln('Platforms :');
+  //  for i:=0 to ocl.PlatformCount-1 do
+  //    writeln(ifthen(i=ocl.ActivePlatformId,' *','  '),ocl.PlatformName(i));
+  //
+  //  ocl.ActiveDeviceId:=0;
+  //  writeln(sLineBreak, sLineBreak,'Devices:');
+  //  for i:=0 to ocl.DeviceCount-1 do
+  //    writeln(ifthen(i=ocl.ActiveDeviceId,' *','  '),ocl.DeviceName(i),', ', ocl.CLDeviceDriver,' : ', ocl.CLDeviceVersion, ' Units :', ocl.ProcessorsCount,' @ ',ocl.ProcessorsFrequency,'Mhz ');
+  //  writeln('');
+  //  wis := ocl.MaxWorkItemSizes;
+  //  writeln('MaxWorkItemSizes = ',wis[0],', ',wis[1],', ',wis[2],', ',#13#10'MaxWorkGroupSize = ', ocl.MaxWorkGroupSize);
+  //  ocl.LoadFromFile(GetCurrentDir+'/source/cl_sgemm.c');
+  //  writeln('Build :',ocl.Build());
+  //  writeln(ocl.BuildLog, sLineBreak, sLineBreak, 'Kernels :', sLineBreak);
+  //
+  //  for i:=0 to ocl.KernelCount-1 do begin
+  //    writeln('  ',ocl.KernelInfo(i).KernelName);
+  //    for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
+  //      writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
+  //    writeln('');
+  //  end;
+  //end;
 
 
 finalization
   DoneCriticalSection(semaphor);
-  if assigned(ocl) then
-    ocl.free
+  //if assigned(ocl) then
+  //  ocl.free
 
 end.
 

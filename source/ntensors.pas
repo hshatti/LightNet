@@ -769,19 +769,19 @@ initialization
  TTensor<Int32>.toStr:=_ToStr;
  TTensor<Int64>.toStr:=_ToStr;
 
- ten  := TTensor<single>.Create([3,3,3]);
- ten.fill(1,1);
+// ten  := TTensor<single>.Create([3,3,3]);
+// ten.fill(1,1);
 
- ten2 := ten.transpose([0,2,1]);
+// ten2 := ten.transpose([0,2,1]);
  //ten.reshape([5,4]);
  //ten.transpose([1,0],@ten2);
- writeln(ten.toString());
+// writeln(ten.toString());
  //ten.transpose([1,0], @ten2);
 
 
- writeln(ten2.toString());
- if assigned(ten.data) then ten.FreeData();
- if assigned(ten2.data) then ten2.FreeData();
+// writeln(ten2.toString());
+// if assigned(ten.data) then ten.FreeData();
+// if assigned(ten2.data) then ten2.FreeData();
  //readln()
 
 

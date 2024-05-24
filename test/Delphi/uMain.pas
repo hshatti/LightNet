@@ -121,7 +121,12 @@ begin
       X := sized.data;
       time := clock();
       network_predict(net, X);
-      writeln(format(#13#10#13#10'%s: Predicted in %.0f[ms]', [input, (clock()-time)/1000000]));
+      writeln(sLineBreak, sLineBreak);
+      writeln('=======================================================================');
+      writeln(format('  Using CPUs : [%d] X %s @%.2fGhz' , [GetSystemThreadCount, string(TOPool.CPUName()), TOPool.CPUFreqMhz().max/1024 ]));
+      writeln('=======================================================================');
+
+      writeln(format(sLineBreak+'%s: Predicted in %.0f[ms]', [input, (clock()-time)/1000000]));
       nboxes := 0;
       dets := get_network_boxes(@net, im.w, im.h, thresh, hier_thresh, nil, true,  @nboxes,true);
       //writeln(format('output[%d][%dX%dX%d]',[l.outputs,l.n, l.h, l.w])+#13#10, l.output.toString(' ',min(200,l.outputs)));
@@ -138,6 +143,9 @@ begin
       application.ProcessMessages;
       inc(i);
       if i=length(filenames) then i:=0;
+
+
+
       writeln(sLineBreak, metrics.print);
       Application.ProcessMessages
     end;
@@ -352,32 +360,33 @@ var i,j,k:IntPtr;
     a:array[0..255] of ansichar;
 initialization
 
-  ocl := TOpenCL.create(dtALL);
-//  ocl.ActivePlatformId:=1;
-  writeln('Platforms :');
-  for i:=0 to ocl.PlatformCount-1 do
-    writeln('  ',ocl.PlatformName(i));
 
-//  ocl.ActivePlatformId:=1;
-
-  writeln(#13'Devices:');
-  for i:=0 to ocl.DeviceCount-1 do
-    writeln('  ',ocl.DeviceName(i));
-  writeln('');
-  ocl.LoadFromFile(GetCurrentDir+'\source\cl_sgemm.c');
-  writeln('Build :',ocl.Build);
-  writeln(ocl.BuildLog);
-
-  writeln(ocl.PlatformCount, ' | ',ocl.PlatformName(ocl.ActivePlatformId), ' | ',
-                             ocl.DeviceName(ocl.ActiveDeviceId),' | ',ocl.CLDeviceDriver,' : ',
-                             ocl.CLDeviceVersion, #13#10, ocl.DeviceBuiltInKernels,#13#10'  Units :',
-                             ocl.MaxComputeUnits,' @ ',ocl.ProcessorsFrequency);
-  for i:=0 to ocl.KernelCount-1 do begin
-    writeln('  ', ansistring(ocl.KernelInfo(i).KernelName));
-    for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
-      writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
-    writeln('');
-  end;
+//  ocl := TOpenCL.create(dtALL);
+////  ocl.ActivePlatformId:=1;
+//  writeln('Platforms :');
+//  for i:=0 to ocl.PlatformCount-1 do
+//    writeln('  ',ocl.PlatformName(i));
+//
+////  ocl.ActivePlatformId:=1;
+//
+//  writeln(#13'Devices:');
+//  for i:=0 to ocl.DeviceCount-1 do
+//    writeln('  ',ocl.DeviceName(i));
+//  writeln('');
+//  ocl.LoadFromFile(GetCurrentDir+'\source\cl_sgemm.c');
+//  writeln('Build :',ocl.Build);
+//  writeln(ocl.BuildLog);
+//
+//  writeln(ocl.PlatformCount, ' | ',ocl.PlatformName(ocl.ActivePlatformId), ' | ',
+//                             ocl.DeviceName(ocl.ActiveDeviceId),' | ',ocl.CLDeviceDriver,' : ',
+//                             ocl.CLDeviceVersion, #13#10, ocl.DeviceBuiltInKernels,#13#10'  Units :',
+//                             ocl.MaxComputeUnits,' @ ',ocl.ProcessorsFrequency);
+//  for i:=0 to ocl.KernelCount-1 do begin
+//    writeln('  ', ansistring(ocl.KernelInfo(i).KernelName));
+//    for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
+//      writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
+//    writeln('');
+//  end;
 
 finalization
 //  ocl.free
