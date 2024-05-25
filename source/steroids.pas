@@ -84,7 +84,7 @@ unit steroids;
   {$ModeSwitch typehelpers}
   {$ModeSwitch nestedprocvars}
   {$ModeSwitch advancedrecords}
-  {$ifdef MSWINDOWS}
+  {$ifdef CPUX64}
     {$FPUType AVX2}
     {$asmmode intel}
   {$endif}
