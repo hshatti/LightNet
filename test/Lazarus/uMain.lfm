@@ -9,7 +9,6 @@ object Form1: TForm1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  LCLVersion = '3.2.0.0'
   object Memo1: TMemo
     Left = 0
     Height = 66
@@ -58,10 +57,10 @@ object Form1: TForm1
       OnClick = Button1Click
     end
     object CheckBox1: TCheckBox
-      Left = 16
-      Height = 21
-      Top = 88
-      Width = 160
+      Left = 20
+      Height = 19
+      Top = 80
+      Width = 130
       Caption = 'Test OpenCV Camera'
       TabOrder = 1
       OnChange = CheckBox1Change
@@ -73,6 +72,7 @@ object Form1: TForm1
       Width = 147
       Caption = 'Test OpenCL'
       TabOrder = 2
+      Visible = False
       OnClick = Button3Click
     end
     object Button2: TButton
@@ -82,6 +82,7 @@ object Form1: TForm1
       Width = 132
       Caption = 'Button2'
       TabOrder = 3
+      Visible = False
       OnClick = Button2Click
     end
     object TrackBar1: TTrackBar
@@ -96,6 +97,7 @@ object Form1: TForm1
       Color = 3487029
       ParentColor = False
       TabOrder = 4
+      Visible = False
     end
     object TrackBar2: TTrackBar
       Left = 46
@@ -109,6 +111,7 @@ object Form1: TForm1
       Color = 3487029
       ParentColor = False
       TabOrder = 5
+      Visible = False
     end
     object TrackBar3: TTrackBar
       Left = 47
@@ -122,34 +125,39 @@ object Form1: TForm1
       Color = 3487029
       ParentColor = False
       TabOrder = 6
+      Visible = False
     end
     object Label1: TLabel
       Left = 4
-      Height = 17
+      Height = 15
       Top = 144
-      Width = 25
+      Width = 20
       Caption = 'Red'
+      Visible = False
     end
     object Label2: TLabel
       Left = 4
-      Height = 17
+      Height = 15
       Top = 169
-      Width = 39
+      Width = 31
       Caption = 'Green'
+      Visible = False
     end
     object Label3: TLabel
       Left = 4
-      Height = 17
+      Height = 15
       Top = 196
-      Width = 29
+      Width = 23
       Caption = 'Blue'
+      Visible = False
     end
     object Label4: TLabel
       Left = 4
-      Height = 17
+      Height = 15
       Top = 224
-      Width = 37
+      Width = 31
       Caption = 'Alpha'
+      Visible = False
     end
     object TrackBar4: TTrackBar
       Left = 47
@@ -163,6 +171,7 @@ object Form1: TForm1
       Color = 3487029
       ParentColor = False
       TabOrder = 7
+      Visible = False
     end
   end
   object Splitter1: TSplitter

@@ -155,6 +155,12 @@ end;
 
 { TOPool }
 TOPool = class
+type
+  TCPUFreq= record
+     base, max, bus, xtal : dword;
+     ratio: double;
+  end;
+  TBuff = array[0..47] of ansichar;
 private
   Pool : array of TOThread;
   OTCount:integer;
@@ -162,6 +168,8 @@ private
   function getWorkers:longint;
 public
   constructor Create;
+  class function CPUName():TBuff ;static;
+  class function CPUFreqMhz():TCPUFreq; static;
   destructor Destroy; override;
   procedure setWorkers(Count:longint);
   procedure &For(const Proc: TGroupProc; const _from, _to: IntPtr; const Params: Pointer = nil); overload;
@@ -185,6 +193,8 @@ var MP, MP2, MP3:TOPool;
 function ExecuteInThread(const proc:TThreadProc; args:Pointer):TThread;
 function GetSystemThreadCount: integer;
 {$ifdef MSWINDOWS}
+var
+  SystemInfo: SYSTEM_INFO;
 {$else}
 {$ifdef fpc}
 const _SC_NPROCESSORS_ONLN = 58;
@@ -206,8 +216,6 @@ end;
 
 function GetSystemThreadCount: integer;
 {$ifdef MSWINDOWS}
-var
-  SystemInfo: SYSTEM_INFO;
 begin
     GetSystemInfo(SystemInfo);
     Result := SystemInfo.dwNumberOfProcessors;
@@ -239,6 +247,91 @@ begin
   end;
   //PoolDone:=RTLEventCreate;
 end;
+
+class function TOPool.CPUName: TBuff;
+{$if defined(CPUX64)}
+asm
+  push rbx
+  mov  r8,    result
+
+  mov eax   , $80000002
+  cpuid
+  mov dword ptr [r8]   , eax
+  mov dword ptr [r8+ 4]  , ebx
+  mov dword ptr [r8+ 8]  , ecx
+  mov dword ptr [r8+12]  , edx
+
+  mov eax   , $80000003
+  cpuid
+  mov dword ptr [r8+16]  , eax
+  mov dword ptr [r8+20]  , ebx
+  mov dword ptr [r8+24]  , ecx
+  mov dword ptr [r8+28]  , edx
+
+  mov eax   , $80000004
+  cpuid
+  mov dword ptr [r8+32]  , eax
+  mov dword ptr [r8+36]  , ebx
+  mov dword ptr [r8+40]  , ecx
+  mov dword ptr [r8+44]  , edx
+  pop rbx
+end;
+
+{$else}
+begin
+// assuming linux on ARM
+
+end;
+{$endif}
+
+class function TOPool.CPUFreqMhz: TCPUFreq;
+{$if defined(CPUX64)}
+asm
+  push rbx
+  mov  r8  , result
+
+
+  mov        eax, $15
+  cpuid                                    // read leaf 15h
+  cmp        ecx  , 0                      // got any frequency ?
+  je         @fr                           // no?, skip to reading leaf 16h
+  mov        TCPUFreq(r8).xtal  , ecx      // got crystal frequency in Hz
+
+  cvtsi2sd   xmm0 , eax                    // CPU clock Ratio D
+  cvtsi2sd   xmm1 , ebx                    // CPU clock ratio N
+  divsd      xmm1 , xmm0
+  movsd      TCPUFreq(r8).ratio , xmm1
+
+  mov        r9  , rcx
+  imul       r9  , rbx
+  xchg       r9  , rax
+  idiv       r9
+  mov        r9  , rax
+
+@fr:
+  mov        eax, $16
+
+  cpuid
+
+  cmp        ebx     , 0
+  je         @no
+  mov        TCPUFreq(r8).base , eax
+  mov        TCPUFreq(r8).max  , ebx
+  mov        TCPUFreq(r8).bus  , ecx
+  jmp        @done
+
+@no:
+  shr        r9d               , 20   // divid by 1024
+  mov        TCPUFreq(r8).max  , r9d
+
+@done:
+  pop rbx
+end;
+{$else}
+begin
+
+end;
+{$endif}
 
 destructor TOPool.Destroy;
 var i:integer;
@@ -583,7 +676,9 @@ begin
     waitForPool
 end;
 
-procedure TOPool.&for(const proc: TThreadProcNested; const start, count: IntPtr; const args: Pointer; const step: IntPtr; const sync:TThreadMethod);
+procedure TOPool.&For(const proc: TThreadProcNested; const start,
+  count: IntPtr; const args: Pointer; const step: IntPtr;
+  const sync: TThreadMethod);
 var
   span, i, ii:IntPtr;
 begin
@@ -617,11 +712,12 @@ begin
     waitForPool
 end;
 
-
+var s:string;
 initialization
   MP:=TOPool.Create;
   MP2:=TOPool.Create;
   MP3:=TOPool.Create;
+
 
 finalization
   MP3.free;

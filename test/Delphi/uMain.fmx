@@ -52,6 +52,7 @@ object Form1: TForm1
     Size.PlatformDefault = False
     TabOrder = 4
     Text = 'Test OpenCL'
+    Visible = False
     OnClick = Button3Click
   end
   object Splitter1: TSplitter
