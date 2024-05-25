@@ -59,7 +59,8 @@
           </Linking>
           <Other>
             <CustomOptions Value="-dUSE_MULTITHREADING
--dUSE_TELEMETRY"/>
+-dUSE_TELEMETRY
+-CfAVX2"/>
             <OtherDefines Count="9">
               <Define0 Value="OPENBLAS_USE64BITINT"/>
               <Define1 Value="OPENBLAS"/>
