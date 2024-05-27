@@ -9,6 +9,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
+  LCLVersion = '3.2.0.0'
   object Memo1: TMemo
     Left = 0
     Height = 66
@@ -72,7 +73,6 @@ object Form1: TForm1
       Width = 147
       Caption = 'Test OpenCL'
       TabOrder = 2
-      Visible = False
       OnClick = Button3Click
     end
     object Button2: TButton

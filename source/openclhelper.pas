@@ -120,7 +120,7 @@ type
     procedure SetActiveKernelId(AValue: integer);
     procedure SetActivePlatformId(AValue: integer);
     procedure SetDeviceType(AValue: TCLDeviceType);
-    procedure CheckError;
+    procedure CheckError(); inline;
     function getCL_Device_Type(const dt:TClDeviceType):cl_uint;
     procedure SetGlobalWorkGroupSize(AValue: TWorkGroupSize);overload;
     procedure SetProgramSource(AValue: ansistring);
@@ -176,6 +176,7 @@ type
     property DeviceBuiltInKernels : TDeviceStr read FDeviceBuiltInKernels;
     property ActiveKernelId:Integer read FActiveKernelId write SetActiveKernelId;
     property WorkItemDimensions:integer read FWorkItemDimensions write SetWorkItemDimensions;
+    property isBuilt:boolean read FIsBuilt;
 (*    procedure CallKernel(const Index: integer; const dst: PLongWord;const c: integer);inline;  *)
     procedure CallKernel(const Index: integer; const dst, a, b: PSingle; const bias:single;const c: integer); overload;
     procedure CallKernel(const Index: integer; const params: TArray<Pointer>);    overload;
@@ -332,7 +333,7 @@ begin
     Build
 end;
 
-procedure TOpenCL.CheckError;
+procedure TOpenCL.CheckError();
 begin
   if FErr<>CL_SUCCESS then
     writeln(clErrorText(FErr));
@@ -387,7 +388,7 @@ begin
   if FErr=CL_SUCCESS then
     if FPlatformCount>0 then begin
       SetLength(FPlatforms,FPlatformCount);
-      FErr:=clGetPlatformIDs(FPlatformCount,@FPlatforms[0],nil);CheckError;
+      FErr:=clGetPlatformIDs(FPlatformCount,@FPlatforms[0],nil);CheckError();
       FSrc:=TStringList.Create;
       FActivePlatformId:=$7fffffff;
       FActiveDeviceId:=$7fffffff;
@@ -445,23 +446,23 @@ var i:integer;
 begin
   try
     for i:=0 to High(FKernels) do begin
-      clReleaseKernel(FKernels[i]);  CheckError;
+      clReleaseKernel(FKernels[i]);  CheckError();
       FKernels[i] := nil
     end;
 
     if FProgram<>nil then begin
-      clReleaseProgram(FProgram);CheckError;
+      clReleaseProgram(FProgram);CheckError();
       FProgram := nil
     end;
 
     if FQueue<>nil then begin
-      clReleaseCommandQueue(FQueue);CheckError;
+      clReleaseCommandQueue(FQueue);CheckError();
       FQueue := nil
     end;
 
     if not keepContext then if
       FContext<>nil then begin
-        clReleaseContext(FContext);CheckError;
+        clReleaseContext(FContext);CheckError();
         FContext:=nil;
       end;
 
@@ -515,20 +516,21 @@ begin
   result:=False;
   src:=PAnsiChar(FProgramSource);
   par:=PAnsiCHar('-cl-kernel-arg-info -cl-fast-relaxed-math -cl-mad-enable '+params);
-  FProgram:=clCreateProgramWithSource(FContext,1,@src,nil,FErr);CheckError;
+  FProgram:=clCreateProgramWithSource(FContext,1,@src,nil,FErr);CheckError();
   FErr:=clBuildProgram(Fprogram,FDeviceCount,@FDevices[0],par,nil,nil);
-  FErr:=clGetProgramBuildInfo(FProgram,FActiveDevice,CL_PROGRAM_BUILD_STATUS,cInfoSize,@FBuildStatus,N);CheckError;
+  FErr:=clGetProgramBuildInfo(FProgram,FActiveDevice,CL_PROGRAM_BUILD_STATUS,cInfoSize,@FBuildStatus,N);CheckError();
   if FBuildStatus<> CL_BUILD_SUCCESS then begin
-    FErr:=clGetProgramBuildInfo(FProgram,FActiveDevice,CL_PROGRAM_BUILD_LOG,cInfoSize,@cinfo[0],N);CheckError;
+    FErr:=clGetProgramBuildInfo(FProgram,FActiveDevice,CL_PROGRAM_BUILD_LOG,cInfoSize,@cinfo[0],N);CheckError();
     FBuildLog:=copy(cinfo,0,N);
   end else begin
-    FErr:=clCreateKernelsInProgram(FProgram,0,nil,FKernelCount);CheckError;
+    FErr:=clCreateKernelsInProgram(FProgram,0,nil,FKernelCount);CheckError();
     setLength(FKernels,FKernelCount);
-    FErr:=clCreateKernelsInProgram(FProgram,FKernelCount,@FKernels[0],sz);CheckError;
-    FErr:=clGetProgramBuildInfo(FProgram,FActiveDevice,CL_PROGRAM_BUILD_LOG,cInfoSize,@cinfo[0],N);CheckError;
+    FErr:=clCreateKernelsInProgram(FProgram,FKernelCount,@FKernels[0],sz);CheckError();
+    FErr:=clGetProgramBuildInfo(FProgram,FActiveDevice,CL_PROGRAM_BUILD_LOG,cInfoSize,@cinfo[0],N);CheckError();
     if N>1 then FBuildLog:=cinfo;
     FActiveKernelId:=-1;
-    SetActiveKernelId(0);
+    if FKernelCount>0 then
+      SetActiveKernelId(0);
     FIsBuilt:=True;
     Result:=True
   end;
@@ -543,20 +545,20 @@ end;
 function TOpenCL.KernelInfo(index: integer): TCLKernelInfo;
 var sz:size_t;i:integer;
 begin
-    FErr:=clGetKernelInfo(FKernels[Index],CL_KERNEL_FUNCTION_NAME,cInfoSize,@result.KernelName[0],N);                                      CheckError;
-    FErr:=clGetKernelInfo(FKernels[Index],CL_KERNEL_NUM_ARGS,cInfoSize,@result.KernelArgCount,N);                                          CheckError;
-//    FErr:=clGetKernelWorkGroupInfo(FKernels[Index],FActiveDevice,CL_KERNEL_GLOBAL_WORK_SIZE,cInfoSize,@result.KernelGlobalWorkSize[0],@N);  CheckError;
-    FErr:=clGetKernelWorkGroupInfo(FKernels[Index],FActiveDevice,CL_KERNEL_WORK_GROUP_SIZE,cInfoSize,@result.KernelWorkGroupSize,@N);     CheckError;
-    FErr:=clGetKernelWorkGroupInfo(FKernels[Index],FActiveDevice,CL_KERNEL_LOCAL_MEM_SIZE,cInfoSize,@result.KernelLocalMemSize,@N);       CheckError;
-    //FErr:=clGetKernelWorkGroupInfo(FKernels[Index],FActiveDevice,CL_KERNEL_PRIVATE_MEM_SIZE,cInfoSize,@result.KernelPrivateMemSize,@N);     CheckError;
+    FErr:=clGetKernelInfo(FKernels[Index],CL_KERNEL_FUNCTION_NAME,cInfoSize,@result.KernelName[0],N);                                      CheckError();
+    FErr:=clGetKernelInfo(FKernels[Index],CL_KERNEL_NUM_ARGS,cInfoSize,@result.KernelArgCount,N);                                          CheckError();
+//    FErr:=clGetKernelWorkGroupInfo(FKernels[Index],FActiveDevice,CL_KERNEL_GLOBAL_WORK_SIZE,cInfoSize,@result.KernelGlobalWorkSize[0],@N);  CheckError();
+    FErr:=clGetKernelWorkGroupInfo(FKernels[Index],FActiveDevice,CL_KERNEL_WORK_GROUP_SIZE,cInfoSize,@result.KernelWorkGroupSize,@N);     CheckError();
+    FErr:=clGetKernelWorkGroupInfo(FKernels[Index],FActiveDevice,CL_KERNEL_LOCAL_MEM_SIZE,cInfoSize,@result.KernelLocalMemSize,@N);       CheckError();
+    //FErr:=clGetKernelWorkGroupInfo(FKernels[Index],FActiveDevice,CL_KERNEL_PRIVATE_MEM_SIZE,cInfoSize,@result.KernelPrivateMemSize,@N);     CheckError();
     setLength(result.KernelArgs,result.KernelArgCount);
     for i:=0 to result.KernelArgCount-1 do begin
         N:=$ff;
-        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_NAME,cInfoSize,@result.KernelArgs[i].ArgName[0],@N);                         CheckError;
-        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_TYPE_NAME,cInfoSize,@result.KernelArgs[i].ArgType[0],@N);                    CheckError;
-        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_TYPE_QUALIFIER,cInfoSize,@result.KernelArgs[i].ArgTypeQualifier,@N);         CheckError;
-        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_ACCESS_QUALIFIER,cInfoSize,@result.KernelArgs[i].ArgAccess,@N);              CheckError;
-        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_ADDRESS_QUALIFIER,cInfoSize,@result.KernelArgs[i].ArgAddress,@N);            CheckError;
+        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_NAME,cInfoSize,@result.KernelArgs[i].ArgName[0],@N);                         CheckError();
+        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_TYPE_NAME,cInfoSize,@result.KernelArgs[i].ArgType[0],@N);                    CheckError();
+        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_TYPE_QUALIFIER,cInfoSize,@result.KernelArgs[i].ArgTypeQualifier,@N);         CheckError();
+        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_ACCESS_QUALIFIER,cInfoSize,@result.KernelArgs[i].ArgAccess,@N);              CheckError();
+        FErr:=clGetKernelArgInfo(FKernels[Index],i,CL_KERNEL_ARG_ADDRESS_QUALIFIER,cInfoSize,@result.KernelArgs[i].ArgAddress,@N);            CheckError();
     end;
 
 end;
@@ -579,15 +581,15 @@ begin
   sz:=FGlobalWorkGroupSizes[0];
   for i:=1 to FWorkItemDimensions-1 do
     sz:=sz*FGlobalWorkGroupSizes[i];
-  FCallParams[0]:=clCreateBuffer(FContext,CL_MEM_READ_WRITE,sz*SizeOf(LongWord),nil,FErr);CheckError;
+  FCallParams[0]:=clCreateBuffer(FContext,CL_MEM_READ_WRITE,sz*SizeOf(LongWord),nil,FErr);CheckError();
   //FCallParams[1]:=clCreateBuffer(FContext,CL_MEM_READ_ONLY, c*4,nil,FErr);
   //FCallParams[2]:=clCreateBuffer(FContext,CL_MEM_READ_ONLY, c*8,nil,FErr);
-  FErr:=clSetKernelArg(FActiveKernel,0,sizeOf(@FCallParams[0]),@FCallParams[0]);CheckError;
+  FErr:=clSetKernelArg(FActiveKernel,0,sizeOf(@FCallParams[0]),@FCallParams[0]);CheckError();
   //FErr:=clSetKernelArg(FActiveKernel,1,sizeOf(cl_mem),FCallParams[1]);
   //FErr:=clSetKernelArg(FActiveKernel,2,sizeOf(cl_mem),FCallParams[2]);
-  FErr:=clSetKernelArg(FActiveKernel,1,SizeOf(c),@c);CheckError;
-  FErr:=clEnqueueNDRangeKernel(FQueue,FActiveKernel,FWorkItemDimensions,FGlobalOffsets,FGlobalWorkGroupSizes,FLocalWorkGroupSizesPtr,0,nil,nil);CheckError;
-  FErr:=clEnqueueReadBuffer(FQueue,FCallParams[0],CL_True,0,sz*SizeOf(LongWord),dst,0,nil,nil);CheckError;
+  FErr:=clSetKernelArg(FActiveKernel,1,SizeOf(c),@c);CheckError();
+  FErr:=clEnqueueNDRangeKernel(FQueue,FActiveKernel,FWorkItemDimensions,FGlobalOffsets,FGlobalWorkGroupSizes,FLocalWorkGroupSizesPtr,0,nil,nil);CheckError();
+  FErr:=clEnqueueReadBuffer(FQueue,FCallParams[0],CL_True,0,sz*SizeOf(LongWord),dst,0,nil,nil);CheckError();
   //FErr:=clFlush(FQueue);
   //FErr:=clFinish(FQueue);
 
@@ -601,17 +603,17 @@ begin
   for i:=1 to FWorkItemDimensions-1 do
     sz:=sz*FGlobalWorkGroupSizes[i];
 
-    FCallParams[0]:=clCreateBuffer(FContext,CL_MEM_WRITE_ONLY {or CL_MEM_USE_HOST_PTR or CL_MEM_ALLOC_HOST_PTR}, {FParamSizes[0]*}sz*SizeOf(dst^),nil,FErr);CheckError;
-    FCallParams[1]:=clCreateBuffer(FContext,CL_MEM_USE_HOST_PTR or CL_MEM_READ_ONLY,{FParamSizes[1]*}sz*SizeOf(a^),    a,FErr);CheckError;
-    FCallParams[2]:=clCreateBuffer(FContext,CL_MEM_USE_HOST_PTR or CL_MEM_READ_ONLY,{FParamSizes[2]*}c*c*SizeOf(b^),    b,FErr);CheckError;
-    FErr:=clSetKernelArg(FKernels[Index],0,sizeof(@FCallParams[0]),@FCallParams[0]);CheckError;
-    FErr:=clSetKernelArg(FKernels[Index],1,sizeOf(@FCallParams[1]),@FCallParams[1]);CheckError;
-    FErr:=clSetKernelArg(FKernels[Index],2,sizeOf(@FCallParams[2]),@FCallParams[2]);CheckError;
-    FErr:=clSetKernelArg(FKernels[Index],3,SizeOf(bias),@bias);CheckError;
-    FErr:=clSetKernelArg(FKernels[Index],4,SizeOf(c),@c);CheckError;
-    FErr:=clEnqueueNDRangeKernel(FQueue,FKernels[Index], FWorkItemDimensions, @FGlobalOffsets[0], @FGlobalWorkGroupSizes[0], @FLocalWorkGroupSizes[0], 0, nil, nil); CheckError;
+    FCallParams[0]:=clCreateBuffer(FContext,CL_MEM_WRITE_ONLY {or CL_MEM_USE_HOST_PTR or CL_MEM_ALLOC_HOST_PTR}, {FParamSizes[0]*}sz*SizeOf(dst^),nil,FErr);CheckError();
+    FCallParams[1]:=clCreateBuffer(FContext,CL_MEM_USE_HOST_PTR or CL_MEM_READ_ONLY,{FParamSizes[1]*}sz*SizeOf(a^),    a,FErr);CheckError();
+    FCallParams[2]:=clCreateBuffer(FContext,CL_MEM_USE_HOST_PTR or CL_MEM_READ_ONLY,{FParamSizes[2]*}c*c*SizeOf(b^),    b,FErr);CheckError();
+    FErr:=clSetKernelArg(FKernels[Index],0,sizeof(@FCallParams[0]),@FCallParams[0]);CheckError();
+    FErr:=clSetKernelArg(FKernels[Index],1,sizeOf(@FCallParams[1]),@FCallParams[1]);CheckError();
+    FErr:=clSetKernelArg(FKernels[Index],2,sizeOf(@FCallParams[2]),@FCallParams[2]);CheckError();
+    FErr:=clSetKernelArg(FKernels[Index],3,SizeOf(bias),@bias);CheckError();
+    FErr:=clSetKernelArg(FKernels[Index],4,SizeOf(c),@c);CheckError();
+    FErr:=clEnqueueNDRangeKernel(FQueue,FKernels[Index], FWorkItemDimensions, @FGlobalOffsets[0], @FGlobalWorkGroupSizes[0], @FLocalWorkGroupSizes[0], 0, nil, nil); CheckError();
 //  if not FSharedMemory then
-    FErr:=clEnqueueReadBuffer(FQueue,FCallParams[0],CL_FALSE,0,{FParamSizes[0]*}sz*SizeOf(dst^),dst,0,nil,nil);CheckError;
+    FErr:=clEnqueueReadBuffer(FQueue,FCallParams[0],CL_FALSE,0,{FParamSizes[0]*}sz*SizeOf(dst^),dst,0,nil,nil);CheckError();
   //FErr:=clFlush(FQueue);
   FErr:=clFinish(FQueue);
 
@@ -627,30 +629,29 @@ begin
   if FSharedMemory then
     FCallParams[0]:=clCreateBuffer(FContext,CL_MEM_READ_WRITE or CL_MEM_USE_HOST_PTR {or CL_MEM_ALLOC_HOST_PTR}, FParamSizes[0],Params[0],FErr)
   else
-    FCallParams[0]:=clCreateBuffer(FContext,CL_MEM_READ_WRITE {or CL_MEM_USE_HOST_PTR or CL_MEM_ALLOC_HOST_PTR}, FParamSizes[0],nil      ,FErr);CheckError;
+    FCallParams[0]:=clCreateBuffer(FContext,CL_MEM_READ_WRITE {or CL_MEM_USE_HOST_PTR or CL_MEM_ALLOC_HOST_PTR}, FParamSizes[0],nil      ,FErr);CheckError();
 
   for i:=0 to KernelInfo(Index).KernelArgCount-1 do begin
     j:=KernelInfo(Index).KernelArgs[i].ArgAccess;
     if Pos('*',KernelInfo(Index).KernelArgs[i].ArgType)>0 then
-      FCallParams[i]:=clCreateBuffer(FContext,CL_MEM_READ_ONLY or CL_MEM_USE_HOST_PTR ,sizeof(cl_mem),params[i],FErr);CheckError;
+      FCallParams[i]:=clCreateBuffer(FContext,CL_MEM_READ_ONLY or CL_MEM_USE_HOST_PTR ,sizeof(cl_mem),params[i],FErr);CheckError();
   end;
 
   for i:=0 to KernelInfo(Index).KernelArgCount-1 do begin
     if Pos('*',KernelInfo(Index).KernelArgs[i].ArgType)>0 then
       FErr:=clSetKernelArg(FKernels[Index],i,sizeof(@FCallParams[i]),@FCallParams[i])
     else
-      FErr:=clSetKernelArg(FKernels[Index],i,FParamSizes[i],params[i]);CheckError;
+      FErr:=clSetKernelArg(FKernels[Index],i,FParamSizes[i],params[i]);CheckError();
   end;
-  FErr:=clEnqueueNDRangeKernel(FQueue,FKernels[Index],FWorkItemDimensions, @FGlobalOffsets[0], @FGlobalWorkGroupSizes[0], @FLocalWorkGroupSizes[0] ,0,nil,nil); CheckError;
+  FErr:=clEnqueueNDRangeKernel(FQueue,FKernels[Index],FWorkItemDimensions, @FGlobalOffsets[0], @FGlobalWorkGroupSizes[0], @FLocalWorkGroupSizes[0] ,0,nil,nil); CheckError();
   if not FSharedMemory then begin
-    FErr:=clEnqueueReadBuffer(FQueue,FCallParams[0],CL_FALSE,0,FParamSizes[0],params[0],0,nil,nil);CheckError;
+    FErr:=clEnqueueReadBuffer(FQueue,FCallParams[0],CL_FALSE,0,FParamSizes[0],params[0],0,nil,nil);CheckError();
     FErr:=clFinish(FQueue);
   end;
 
 end;
 
-procedure TOpenCL.CallKernel(const Index: integer; const dst: PLongWord;
-  const a, b: integer);
+procedure TOpenCL.CallKernel(const Index: integer; const dst: PLongWord; const a, b: integer);
 var ki:TCLKernelInfo;sz:size_t;i:integer;
 begin
   if Index > high(FKernels) then
@@ -659,15 +660,15 @@ begin
   for i:=1 to FWorkItemDimensions-1 do
     sz:=sz*FGlobalWorkGroupSizes[i];
 
-  FCallParams[0]:=clCreateBuffer(FContext,CL_MEM_WRITE_ONLY {or CL_MEM_USE_HOST_PTR or CL_MEM_ALLOC_HOST_PTR}, FParamSizes[0],nil,FErr);CheckError;
+  FCallParams[0]:=clCreateBuffer(FContext, {CL_MEM_WRITE_ONLY or} CL_MEM_USE_HOST_PTR {or CL_MEM_ALLOC_HOST_PTR}, FParamSizes[0],dst,FErr);CheckError();
 
-  FErr:=clSetKernelArg(FKernels[Index],0,sizeof(FCallParams[0]),@FCallParams[0]);CheckError;
-  FErr:=clSetKernelArg(FKernels[Index],1,SizeOf(a),@a);CheckError;
-  FErr:=clSetKernelArg(FKernels[Index],2,SizeOf(b),@b);CheckError;
-  FErr:=clEnqueueNDRangeKernel(FQueue,FKernels[Index] ,FWorkItemDimensions ,@FGlobalOffsets[0] , @FGlobalWorkGroupSizes[0] ,@FLocalWorkGroupSizes[0] ,0 ,nil ,nil ); CheckError;
-  FErr:=clEnqueueReadBuffer(FQueue,FCallParams[0],CL_TRUE,0,{FParamSizes[0]*}sz*SizeOf(dst^),dst,0,nil,nil);CheckError;
+  FErr:=clSetKernelArg(FKernels[Index],0,sizeof(cl_mem),@FCallParams);CheckError();
+  FErr:=clSetKernelArg(FKernels[Index],1,SizeOf(a),@a);CheckError();
+  FErr:=clSetKernelArg(FKernels[Index],2,SizeOf(b),@b);CheckError();
+  FErr:=clEnqueueNDRangeKernel(FQueue,FKernels[Index] ,FWorkItemDimensions ,@FGlobalOffsets[0] , @FGlobalWorkGroupSizes[0] ,@FLocalWorkGroupSizes[0] ,0 ,nil ,nil ); CheckError();
+  FErr:=clEnqueueReadBuffer(FQueue,FCallParams[0], CL_TRUE,0, FParamSizes[0], dst,0,nil,nil);CheckError();
   //FErr:=clFinish(FQueue);
-  FErr:=clReleaseMemObject(FCallParams[0]);CheckError;
+  FErr:=clReleaseMemObject(FCallParams[0]);CheckError();
 
 end;
 
@@ -696,21 +697,21 @@ begin
   wasBuilt:=FIsBuilt;
   CleanUp(true);
   FQueue:=clCreateCommandQueue(FContext,FDevices[AValue],0, 0 (* QWord(@FErr) *) );
-  CheckError;
+  CheckError();
   FActiveDevice:=FDevices[AValue];
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_EXECUTION_CAPABILITIES,SizeOf(cl_device_exec_capabilities),@FExecCaps,N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_WORK_GROUP_SIZE,SizeOf(FMaxWorkGroupSize),@FMaxWorkGroupSize,N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,SizeOf(FMaxWorkItemDimensions),@FMaxWorkItemDimensions,N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_MEM_ALLOC_SIZE,SizeOf(FMaxMemAllocSize),@FMaxMemAllocSize,N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_WORK_ITEM_SIZES,SizeOf(size_t)*3,@FMaxWorkItemSizes[0],N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_COMPUTE_UNITS,SizeOf(FMaxComputeUnits),@FMaxComputeUnits,N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_CLOCK_FREQUENCY,SizeOf(FMaxFrequency),@FMaxFrequency,N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_GLOBAL_MEM_SIZE,SizeOf(FGlobalMemSize),@FGlobalMemSize,N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_LOCAL_MEM_SIZE,SizeOf(FLocalMemSize),@FLocalMemSize,N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_BUILT_IN_KERNELS,cInfoSize,@FDeviceBuiltInKernels[0],N);CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_OPENCL_C_VERSION,cInfoSize,@CLDeviceVersion[0],N); CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_VENDOR,cInfoSize,@CLDeviceDriver,N);            CheckError;
-  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_HOST_UNIFIED_MEMORY,SizeOf(isShared),@isShared,N);CheckError;
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_EXECUTION_CAPABILITIES,SizeOf(cl_device_exec_capabilities),@FExecCaps,N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_WORK_GROUP_SIZE,SizeOf(FMaxWorkGroupSize),@FMaxWorkGroupSize,N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,SizeOf(FMaxWorkItemDimensions),@FMaxWorkItemDimensions,N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_MEM_ALLOC_SIZE,SizeOf(FMaxMemAllocSize),@FMaxMemAllocSize,N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_WORK_ITEM_SIZES,SizeOf(size_t)*3,@FMaxWorkItemSizes[0],N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_COMPUTE_UNITS,SizeOf(FMaxComputeUnits),@FMaxComputeUnits,N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_MAX_CLOCK_FREQUENCY,SizeOf(FMaxFrequency),@FMaxFrequency,N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_GLOBAL_MEM_SIZE,SizeOf(FGlobalMemSize),@FGlobalMemSize,N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_LOCAL_MEM_SIZE,SizeOf(FLocalMemSize),@FLocalMemSize,N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_BUILT_IN_KERNELS,cInfoSize,@FDeviceBuiltInKernels[0],N);CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_OPENCL_C_VERSION,cInfoSize,@CLDeviceVersion[0],N); CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_VENDOR,cInfoSize,@CLDeviceDriver,N);            CheckError();
+  FErr:=clGetDeviceInfo(FActiveDevice,CL_DEVICE_HOST_UNIFIED_MEMORY,SizeOf(isShared),@isShared,N);CheckError();
   FSharedMemory:=isShared=CL_TRUE;
   if wasBuilt then
     Build;
@@ -731,15 +732,15 @@ begin
   if (AValue>High(FPlatforms)) or (FActivePlatform=FPlatforms[AValue]) then Exit;
   if AValue>High(FPlatforms) then raise Exception.Create('Platform index out of bounds!');
   FActivePlatform:=FPlatforms[AValue];
-  FErr:=clGetDeviceIDs(FActivePlatform,getCL_Device_Type(FDeviceType),0,nil,@FDeviceCount);  CheckError;
+  FErr:=clGetDeviceIDs(FActivePlatform,getCL_Device_Type(FDeviceType),0,nil,@FDeviceCount);  CheckError();
   if FDeviceCount=0 then raise Exception.Create('No Devices found!');
   setLength(FDevices,FDeviceCount);
   setLength(FDevicesType,FDeviceCount);
-  FErr:=clGetDeviceIDs(FActivePlatform,getCL_Device_Type(FDeviceType),FDeviceCount,@FDevices[0],nil);  CheckError;
+  FErr:=clGetDeviceIDs(FActivePlatform,getCL_Device_Type(FDeviceType),FDeviceCount,@FDevices[0],nil);  CheckError();
   FDevsTypeStr:='';
   for i:=0 to FDeviceCount-1 do
     begin
-      FErr:=clGetDeviceInfo(FDevices[i],CL_DEVICE_TYPE_INFO,SizeOf(size_t),@dt,N);  CheckError;
+      FErr:=clGetDeviceInfo(FDevices[i],CL_DEVICE_TYPE_INFO,SizeOf(size_t),@dt,N);  CheckError();
       Case dt of
         CL_DEVICE_TYPE_DEFAULT:begin FDevicesType[i]:=dtDefault;FDevsTypeStr:=FDevsTypeStr+#13#10'DEFAULT' end;
         CL_DEVICE_TYPE_CPU:begin FDevicesType[i]:=dtCPU;FDevsTypeStr:=FDevsTypeStr+#13#10'CPU' end;
@@ -749,10 +750,10 @@ begin
     end;
   delete(FDevsTypeStr,1,2);
   if FContext<>nil then begin
-    clReleaseContext(FContext);CheckError;
+    clReleaseContext(FContext);CheckError();
     FContext:=nil
   end;
-  FContext:=clCreateContext(nil,FDeviceCount,@FDevices[0],nil,nil,FErr);CheckError;
+  FContext:=clCreateContext(nil,FDeviceCount,@FDevices[0],nil,nil,FErr);CheckError();
   FActiveDeviceId:=-1;
   SetActiveDeviceId(0);
   FActivePlatformId:=AValue;

@@ -86,6 +86,7 @@ var
     X:TArray<single>;
     nboxes,i, labels_size: longint;
     dets : TArray<TDetection>;
+    label skip;
 begin
     if isDetecting then begin
        isDetecting:=False;
@@ -115,6 +116,9 @@ begin
     while isDetecting  do begin
 
       input:=filenames[i];
+      if not FileExists('data/'+input+'.jpg') then
+        goto skip;    // somtimes it's good to goto
+
       im := load_image_color('data/'+input+'.jpg', 0, 0);
       Application.ProcessMessages;
       sized := letterbox_image(im, net.w, net.h);
@@ -135,19 +139,19 @@ begin
 
       writeln(format('  thersh[%.2f] Detections [%d]', [thresh, Length(dets)]));
       draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes,0.5);
-        System.SysUtils.DeleteFile(string(input+'1.jpg'));
-      save_image(im, input+'1');
-      if FileExists(input+'1.jpg') then
-          Form1.Image1.Bitmap.loadFromFile(input+'1.jpg');
-      Form1.Image1.Repaint;
+//      System.SysUtils.DeleteFile(string(input+'1.jpg'));
+//      save_image(im, input+'1');
+//      if FileExists(input+'1.jpg') then
+//          Form1.Image1.Bitmap.loadFromFile(input+'1.jpg');
+//      Form1.Image1.Repaint;
+      Form1.Image1.Bitmap:=imageToBitmap(im, Form1.Image1.Bitmap);
       application.ProcessMessages;
+      writeln(sLineBreak, metrics.print);
+
+    skip:
       inc(i);
       if i=length(filenames) then i:=0;
 
-
-
-      writeln(sLineBreak, metrics.print);
-      Application.ProcessMessages
     end;
     free_network(net);
 //
@@ -168,7 +172,7 @@ end;
 
 { TForm1 }
 
-const filenames: TArray<string> = ['dog','kite','horses','person'];
+const filenames: TArray<string> = ['dog','kite','horses','person', 'eagle', 'giraffe', 'startrek1'];
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   if isDetecting then
@@ -176,7 +180,7 @@ begin
   else
     Button1.Text := 'Stop' ;
 
-  test_detector('cfg/coco.data','cfg/yolov7.cfg','yolov7.weights',filenames,thresh,hier_thresh,'',0);
+  test_detector('cfg/coco.data','cfg/yolov4.cfg','yolov4.weights',filenames,thresh,hier_thresh,'',0);
 end;
 
 
@@ -352,7 +356,7 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  SetCurrentDir('..');
+//  SetCurrentDir('..');
   Memo1.Lines.Add('Current directory : ' + GetCurrentDir)
 end;
 
@@ -361,32 +365,32 @@ var i,j,k:IntPtr;
 initialization
 
 
-//  ocl := TOpenCL.create(dtALL);
-////  ocl.ActivePlatformId:=1;
-//  writeln('Platforms :');
-//  for i:=0 to ocl.PlatformCount-1 do
-//    writeln('  ',ocl.PlatformName(i));
-//
-////  ocl.ActivePlatformId:=1;
-//
-//  writeln(#13'Devices:');
-//  for i:=0 to ocl.DeviceCount-1 do
-//    writeln('  ',ocl.DeviceName(i));
-//  writeln('');
-//  ocl.LoadFromFile(GetCurrentDir+'\source\cl_sgemm.c');
-//  writeln('Build :',ocl.Build);
-//  writeln(ocl.BuildLog);
-//
-//  writeln(ocl.PlatformCount, ' | ',ocl.PlatformName(ocl.ActivePlatformId), ' | ',
-//                             ocl.DeviceName(ocl.ActiveDeviceId),' | ',ocl.CLDeviceDriver,' : ',
-//                             ocl.CLDeviceVersion, #13#10, ocl.DeviceBuiltInKernels,#13#10'  Units :',
-//                             ocl.MaxComputeUnits,' @ ',ocl.ProcessorsFrequency);
-//  for i:=0 to ocl.KernelCount-1 do begin
-//    writeln('  ', ansistring(ocl.KernelInfo(i).KernelName));
-//    for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
-//      writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
-//    writeln('');
-//  end;
+  ocl := TOpenCL.create(dtALL);
+//  ocl.ActivePlatformId:=1;
+  writeln('Platforms :');
+  for i:=0 to ocl.PlatformCount-1 do
+    writeln('  ',ocl.PlatformName(i));
+
+//  ocl.ActivePlatformId:=1;
+
+  writeln(#13'Devices:');
+  for i:=0 to ocl.DeviceCount-1 do
+    writeln('  ',ocl.DeviceName(i));
+  writeln('');
+  ocl.LoadFromFile(GetCurrentDir+'\source\cl_sgemm.c');
+  writeln('Build :',ocl.Build);
+  writeln(ocl.BuildLog);
+
+  writeln(ocl.PlatformCount, ' | ',ocl.PlatformName(ocl.ActivePlatformId), ' | ',
+                             ocl.DeviceName(ocl.ActiveDeviceId),' | ',ocl.CLDeviceDriver,' : ',
+                             ocl.CLDeviceVersion, #13#10, ocl.DeviceBuiltInKernels,#13#10'  Units :',
+                             ocl.MaxComputeUnits,' @ ',ocl.ProcessorsFrequency);
+  for i:=0 to ocl.KernelCount-1 do begin
+    writeln('  ', ansistring(ocl.KernelInfo(i).KernelName));
+    for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
+      writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
+    writeln('');
+  end;
 
 finalization
 //  ocl.free

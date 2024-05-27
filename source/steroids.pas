@@ -12,68 +12,96 @@
 }
 
 (* instead of the regular pascal for loop,
-  Just prepare a TProcGroup (or TProcGroupNested or TMethodGroup) like prcedure
-then call ir using "ParallelFor" you need to put in a loop
+  Just prepare a prcedure of form :
+  procedure loopedProcedure(i :IntPtr ; args:pointer);
+
+  then call it using "MP.&For(loopedProcedure, forStart, forFinish)" where <i> in the loopedProcedure will loop from <forStart> to <forFinish>
+
+example Fast Mandelbrot set creation on steroids (in FreePascal) :
 *******************************************************************************************
-// example : Sine wave signal generator
-program SineWaveGen;
-{$mode objfpc}   // allow pointermath
-uses {$ifdef unix} cthreads,{$endif} Classes, Types , Steroids, Crt;
-const   N=1000000;  Freq=0.05;
-var
-  i,j,PortHeight:integer;
-  a,b: array of Double;
-  Amplitude: Double;
-// prepare a parallel callback function
-procedure _looper(const _start,_end:integer;params:PPointer);
-var i:integer;
+// under implementation section
+uses steroids;
+
+// enable nested procedures
+{$ModeSwitch nestedprocvars}
+
+const max_iteration = 10000;
+const lnxp1_max_iteration:single = Ln(1+max_iteration);
+
+function mapX(const x:single):single ;inline;
 begin
-  for i:=_start to _end do begin
-    PDouble(params[0])[i]:=sin(i*freq); // array a is at parameter index 0
-    PDouble(params[1])[i]:=cos(i*freq); // array b is at parameter index 1
-  end;
+  result:= x*3 - 2.1;
 end;
+
+function mapY(const y:single):single ;inline;
 begin
-  PortHeight:=ScreenHeight-2;
-  Amplitude:=PortHeight*0.2;
-  setLength(a,N);
-  setLength(b,N);
-// instead of the following loop :
-{
-for i:=0 to N-1 do begin
-    a[i]:=sin(i*Freq);
-    b[i]:=cos(i*Freq)
+  result:= y*3 - 1.5;
+end;
+
+
+procedure Mandelbrot(const bmp:TBitmap);
+
+  procedure Mandel(y: PtrInt; ptr:Pointer);
+  const _max :single= 4.0;
+  var
+    x, iteration:integer;
+    c:byte;
+    x0, xx, y0, yy, xtemp, diffTolast, diffToMax, coverageNum, currentAbs, oldAbs:single;
+    d:PByte;
+  begin
+      d:=bmp.ScanLine[y];
+      for x:=0 to bmp.width -1 do begin
+          xx:=mapx(x/bmp.width);yy:=mapy(y/bmp.Height);
+          x0:=0.0;y0:=0.0;
+          iteration:=0;
+          oldabs:=0;
+          coverageNum := max_iteration;
+          while iteration < max_iteration do begin
+              xtemp := x0*x0 - y0*y0;
+              y0 := 2*x0*y0;
+              x0 := xtemp;
+              x0:=x0+xx;
+              y0:=y0+yy;
+              currentAbs:=x0*x0+y0*y0;
+              if currentabs>4.0 then begin
+                 difftoLast  := currentAbs - oldAbs;
+                 diffToMax   :=       _max - oldAbs;
+                 coverageNum := iteration + difftoMax/difftoLast;
+                 break
+              end;
+              oldAbs:=currentAbs;
+              inc(iteration);
+          end;
+          if iteration=max_iteration then begin
+          {$ifdef MSWINDOWS}
+              PLongWord(@d[x*4])^ := $ff000000;
+          {$else}
+              PLongWord(@d[x*4])^ := $000000ff;
+          {$endif}
+          end else
+          begin
+              c := trunc($ff * ln(1+coverageNum)/lnxp1_max_iteration);
+          {$ifdef MSWINDOWS}
+              d[x*4+0] := c;
+              d[x*4+1] := c;//trunc(c*1.2) and $ff;
+              d[x*4+2] := c;//trunc(c*2.4) and $ff;
+              d[x*4+3] := $ff
+          {$else}
+              d[x*4+0] := $ff;
+              d[x*4+1] := c;//trunc(c*1.2) and $ff;
+              d[x*4+2] := c;//trunc(c*2.4) and $ff;
+              d[x*4+3] := c
+          {$endif}
+          end;
+      end;
   end;
-}
-// put your loop on steroids!!, jump in the thread pool and use this :
-  MP.&For(_looper),0,N-1,[ @a[0], @b[0] ]); // remove the "@" when using delphi mode!
-  DirectVideo:=True;
-  CheckBreak:=True;
-  j:=0;
-  while true do begin
-    inc(j);
-    if j>=N then j:=0 ;
-    TextBackground(black);
-    ClrScr;
-    TextColor(Green);
-    for i:=0 to ScreenWidth-1 do begin
-      GotoXY(i,PortHeight div 4+round(a[j+i]*Amplitude));
-      Write('-');
-    end;
-    TextColor(Red);
-    for i:=0 to ScreenWidth-1 do begin
-      GotoXY(i,PortHeight * 3 div 4+round(b[j*2+i]*Amplitude));
-      Write('o');
-    end;
-    GotoXY(1,ScreenHeight);
-    TextBackground(LightGray);
-    TextColor(Black);
-    write('Press ESC to exit') ;
-    Delay(10);
-    if KeyPressed then if ReadKey=#27 then exit;
-  end;
-//  TextAttr:=TextAttr and not blink;
-end.
+
+begin
+  bmp.BeginUpdate();
+  MP.&for(mandel, 0, bmp.height-1)  // Now run Mandelbrot set on Steroids
+  bmp.endUpdate();
+end;
+
 //PLEASE USE IN PEACE!!
 ********************************************************************************************************
 *)
@@ -164,6 +192,11 @@ type
 private
   Pool : array of TOThread;
   OTCount:integer;
+  {$ifdef fpc}
+  PoolDone:PRTLEvent;
+  {$else}
+  PoolDone:TEvent;
+  {$endif}
   procedure WaitForPool;
   function getWorkers:longint;
 public
@@ -186,7 +219,6 @@ public
   procedure setPriority(const priority:TGroupPriority);
   property Workers:longint read getWorkers write SetWorkers;
   property PendingWorkCount:integer read OTCount;
-  //PoolDone:PRTLEvent;
   //FCriticalSection:TRTLCriticalSection;
 end;
 var MP, MP2, MP3:TOPool;
@@ -245,7 +277,11 @@ begin
     Pool[i].FID:=i;
     Pool[i].FPool:=Self
   end;
-  //PoolDone:=RTLEventCreate;
+  {$ifdef FPC}
+  PoolDone := RTLEventCreate;
+  {$else}
+  PoolDone := TEvent.Create();
+  {$endif}
 end;
 
 class function TOPool.CPUName: TBuff;
@@ -346,8 +382,11 @@ begin
     //Pool[i].Free;
   end;
   inherited Destroy;
-    //RTLEventDestroy(PoolDone);
-  //DoneCriticalSection(FCriticalSection);
+  {$ifdef FPC}
+  RTLEventDestroy(PoolDone);
+  {$else}
+  FreeAndNil(PoolDone)
+  {$endif}
 end;
 
 procedure TOPool.setWorkers(Count: longint);
@@ -361,14 +400,12 @@ begin
       {$ifdef MSWINDOWS}ResetEvent(Pool[i].Fire){$else}Pool[i].Fire.ReSetEvent{$endif};
       {$endif}
     end;
-    //RTLEventDestroy(PoolDone);
     Setlength(Pool, Count);
     for i:=0 to High(Pool) do begin
       Pool[i]:=TOthread.Create(false);
       Pool[i].FID:=i;
       Pool[i].FPool:=Self
     end;
-    //PoolDone:=RTLEventCreate;
 end;
 //procedure lockInc(var int:integer);assembler;nostackframe;
 //asm
@@ -426,25 +463,24 @@ begin
         end;
         FThreadProcNested:=nil;
       end;
-      //EnterCriticalSection(FPool.FCriticalSection);
       {$ifdef FPC}
       InterLockedDecrement(FPool.OTCount);
       {$else}
       TInterLocked.Decrement(FPool.OTCount);
       {$endif}
-      //if FPool.OTCount<=0 then
-      //  RTLEventSetEvent(FPool.PoolDone);  // jump out of the pool
-      //LeaveCriticalSection(FPool.FCriticalSection);
-      {$ifdef FPC}
-      //RTLEventResetEvent(Fire)
-      {$else}
+      {$ifndef FPC}
       {$ifdef MSWINDOWS}
 //        ResetEvent(Fire);
       {$else}
         Fire.ResetEvent();
       {$endif}
       {$endif}
-      FBusy:=false
+      FBusy:=false;
+      {$ifdef FPC}
+      RTLEventSetEvent(FPool.PoolDone);
+      {$else}
+      FPool.PoolDone.SetEvent;
+      {$endif}
     end else
       exit;
   end
@@ -505,26 +541,13 @@ begin
 end;
 
 procedure TOPool.WaitForPool;
-var dummy:int64 ;
 begin
   while isBusy() do
-    {$ifdef fpc}
-      {$ifdef CPUX64}
-        asm
-          pause
-        end;
-      {$else}
-        sleep(1)
-      {$endif}
-    {$else}
-      TInterLocked.Exchange(dummy,not dummy);
-    {$endif}
-
-
-//    InterLockedExchange64(dummy,not dummy);
-//  asm
-//    pause
-//  end
+     {$ifdef fpc}
+     RTLEventWaitFor(PoolDone);
+     {$else}
+     PoolDone.WaitFor()
+     {$endif}
 end;
 
 function TOPool.getWorkers: longint;
@@ -565,7 +588,6 @@ begin
           {$endif}
           {$endif}
       end;
-    //RTLEventWaitFor(PoolDone);
     waitForPool
 end;
 
@@ -601,7 +623,6 @@ begin
           {$endif}
           {$endif}
       end;
-    //RTLEventWaitFor(PoolDone);
     waitForPool
 end;
 
@@ -637,7 +658,6 @@ begin
           {$endif}
           {$endif}
       end;
-    //RTLEventWaitFor(PoolDone);
     waitForPool
 end;
 
@@ -672,7 +692,6 @@ begin
           {$endif}
         {$endif}
     end;
-    //RTLEventWaitFor(PoolDone);
     waitForPool
 end;
 
@@ -708,7 +727,6 @@ begin
           {$endif}
         {$endif}
     end;
-    //RTLEventWaitFor(PoolDone);
     waitForPool
 end;
 
