@@ -483,7 +483,7 @@ const TILE_N = 16 ;  // AVX 2 operations * 8 (8 singles);
 const TILE_K = 16 ;  // loops
 
 {$if defined(CPUX64) and defined(FPUAVX2)}
-procedure nn_fast(const A, B, C:PSingle; const ALPHA:single; const lda, ldb, ldc, i, CN, k:PtrInt);assembler;local;
+procedure nn_fast(const A, B, C:PSingle; const ALPHA:single; const lda, ldb, ldc, i, CN, k:PtrInt);local;assembler;
 asm
 // save non-volatile registers to stack
   push               r12
@@ -580,7 +580,7 @@ asm
   vfmadd231ps        ymm10    , ymm0    , ymm7
   //vmulps             ymm5     , ymm0    , ymm7
   //vaddps             ymm10    , ymm10   , ymm5
-  {$endif}
+{$endif}
   vfmadd231ps        ymm9     , ymm1    , ymm6
   //vmulps             ymm5     , ymm1    , ymm6
   //vaddps             ymm9     , ymm9    , ymm5

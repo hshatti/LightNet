@@ -59,7 +59,7 @@ var
   bmp:Graphics.TBitmap;
 
 implementation
-
+uses Opencl;
 {$R *.lfm}
 
 {$ifdef USE_OPENCV}
@@ -403,7 +403,7 @@ begin
   result:= x*3 - 2.1;
 end;
 // Same purpose as mapX
-// [0, 1] -> [-1.25, 1.25]
+// [0, 1] -> [-1.5, 1.5]
 function mapY(const y:single):single ;inline;
 begin
   result:= y*3 - 1.5;
@@ -414,71 +414,6 @@ var semaphor :TRTLCRITICALSECTION;
 {$else}
 var semaphor :TCRITICALSECTION;
 {$endif}
-
-
-procedure Mandel(y: PtrInt; ptr:Pointer);
-const _max :single= 4.0;
-var
-  x, iteration:integer;
-  //y : integer;
-  c:byte;
-  x0, xx, y0, yy, xtemp, diffTolast, diffToMax, coverageNum, currentAbs, oldAbs:single;
-  d:PByte;
-  bmp:^Graphics.TBitmap absolute ptr;
-begin
-
-
-    //for y:=f to t do
-      begin
-        d:=bmp.ScanLine[y];
-        for x:=0 to bmp.width -1 do begin
-            xx:=mapx(x/bmp.width);yy:=mapy(y/bmp.Height);
-            x0:=0.0;y0:=0.0;
-            iteration:=0;
-            oldabs:=0;
-            coverageNum := max_iteration;
-            while iteration < max_iteration do begin
-                xtemp := x0*x0 - y0*y0;
-                y0 := 2*x0*y0;
-                x0 := xtemp;
-                x0:=x0+xx;
-                y0:=y0+yy;
-                currentAbs:=x0*x0+y0*y0;
-                if currentabs>4.0 then begin
-                   difftoLast  := currentAbs - oldAbs;
-                   diffToMax   :=       _max - oldAbs;
-                   coverageNum := iteration + difftoMax/difftoLast;
-                   break
-                end;
-                oldAbs:=currentAbs;
-                inc(iteration);
-            end;
-            if iteration=max_iteration then begin
-            {$ifdef MSWINDOWS}
-                PLongWord(@d[x*4])^ := $ff000000;
-            {$else}
-                PLongWord(@d[x*4])^ := $000000ff;
-            {$endif}
-            end else
-            begin
-                c := trunc($ff * ln(1+coverageNum)/lnxp1_max_iteration);
-            {$ifdef MSWINDOWS}
-                d[x*4+0] := c;
-                d[x*4+1] := c;//trunc(c*1.2) and $ff;
-                d[x*4+2] := c;//trunc(c*2.4) and $ff;
-                d[x*4+3] := $ff
-            {$else}
-                d[x*4+0] := $ff;
-                d[x*4+1] := c;//trunc(c*1.2) and $ff;
-                d[x*4+2] := c;//trunc(c*2.4) and $ff;
-                d[x*4+3] := c
-            {$endif}
-            end;
-        end;
-      end;
-end;
-
-
 
 procedure baseline_mmul(const A, B, C:PSingle; N :size_t);
 var row, col, idx :size_t;
@@ -562,14 +497,72 @@ begin
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
+  procedure Mandel(y: PtrInt; ptr:Pointer);
+  const _max :single= 4.0;
+  var
+    x, iteration:integer;
+    c:byte;
+    x0, xx, y0, yy, xtemp, diffTolast, diffToMax, coverageNum, currentAbs, oldAbs:single;
+    d:PByte;
+  begin
+      d:=bmp.ScanLine[y];
+      for x:=0 to bmp.width -1 do begin
+          xx:=mapx(x/bmp.width);yy:=mapy(y/bmp.Height);
+          x0:=0.0;y0:=0.0;
+          iteration:=0;
+          oldabs:=0;
+          coverageNum := max_iteration;
+          while iteration < max_iteration do begin
+              xtemp := x0*x0 - y0*y0;
+              y0 := 2*x0*y0;
+              x0 := xtemp;
+              x0:=x0+xx;
+              y0:=y0+yy;
+              currentAbs:=x0*x0+y0*y0;
+              if currentabs>4.0 then begin
+                 difftoLast  := currentAbs - oldAbs;
+                 diffToMax   :=       _max - oldAbs;
+                 coverageNum := iteration + difftoMax/difftoLast;
+                 break
+              end;
+              oldAbs:=currentAbs;
+              inc(iteration);
+          end;
+          if iteration=max_iteration then begin
+          {$ifdef MSWINDOWS}
+              PLongWord(@d[x*4])^ := $ff000000;
+          {$else}
+              PLongWord(@d[x*4])^ := $000000ff;
+          {$endif}
+          end else
+          begin
+              c := trunc($ff * ln(1+coverageNum)/lnxp1_max_iteration);
+          {$ifdef MSWINDOWS}
+              d[x*4+0] := c;
+              d[x*4+1] := c;//trunc(c*1.2) and $ff;
+              d[x*4+2] := c;//trunc(c*2.4) and $ff;
+              d[x*4+3] := $ff
+          {$else}
+              d[x*4+0] := $ff;
+              d[x*4+1] := c;//trunc(c*1.2) and $ff;
+              d[x*4+2] := c;//trunc(c*2.4) and $ff;
+              d[x*4+3] := c
+          {$endif}
+          end;
+      end;
+  end;
+
 const N = //384;
            //768;
            1152;
   uTickPerSec=1000000;
   EPS=0.000001;
 var
+
+
   t, i : int64;  pb:PByte;
-  p :TMPParams;
+
+
   //A,B,C,D:PSingle;
   //diff:single;
 begin
@@ -626,7 +619,7 @@ begin
   end
   else begin
     //for i:=0 to bmp.height-1 do Mandel(i , @bmp);
-    MP.&for(mandel, 0, bmp.Height-1, @bmp);
+    MP.&for(mandel, 0, bmp.Height-1);
   end;
   bmp.EndUpdate();
   writeln((clock()-t)/1000000:3:3,'MS');
@@ -642,39 +635,42 @@ initialization
   {$endif}
   InitCriticalSection(semaphor);
 
-  //if TOpenCL.Plaforms>0 then begin
-  //  ocl := TOpenCL.create(dtALL);
-  //  ocl.ActivePlatformId:=1;
+  if TOpenCL.Plaforms>0 then begin
+    ocl := TOpenCL.create(dtALL);
+    ocl.ActivePlatformId:=1;
+
   //  writeln(ocl.DevicesTypeStr);
   //
   //  writeln('Platforms :');
   //  for i:=0 to ocl.PlatformCount-1 do
   //    writeln(ifthen(i=ocl.ActivePlatformId,' *','  '),ocl.PlatformName(i));
   //
-  //  ocl.ActiveDeviceId:=0;
+    ocl.ActiveDeviceId:=0;
+    writeln(ocl.ProcessorsCount);
   //  writeln(sLineBreak, sLineBreak,'Devices:');
   //  for i:=0 to ocl.DeviceCount-1 do
   //    writeln(ifthen(i=ocl.ActiveDeviceId,' *','  '),ocl.DeviceName(i),', ', ocl.CLDeviceDriver,' : ', ocl.CLDeviceVersion, ' Units :', ocl.ProcessorsCount,' @ ',ocl.ProcessorsFrequency,'Mhz ');
   //  writeln('');
   //  wis := ocl.MaxWorkItemSizes;
   //  writeln('MaxWorkItemSizes = ',wis[0],', ',wis[1],', ',wis[2],', ',#13#10'MaxWorkGroupSize = ', ocl.MaxWorkGroupSize);
-  //  ocl.LoadFromFile(GetCurrentDir+'/source/cl_sgemm.c');
-  //  writeln('Build :',ocl.Build());
-  //  writeln(ocl.BuildLog, sLineBreak, sLineBreak, 'Kernels :', sLineBreak);
-  //
-  //  for i:=0 to ocl.KernelCount-1 do begin
-  //    writeln('  ',ocl.KernelInfo(i).KernelName);
-  //    for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
-  //      writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
-  //    writeln('');
-  //  end;
-  //end;
+    ocl.LoadFromFile(GetCurrentDir+'/source/cl_sgemm.c');
+    ocl.Build();
+    writeln('Build :',ocl.isBuilt);
+    writeln(ocl.BuildLog, sLineBreak, sLineBreak, 'Kernels :', sLineBreak);
+
+    for i:=0 to ocl.KernelCount-1 do begin
+      writeln('  ',ocl.KernelInfo(i).KernelName);
+      for k:=0 to ocl.KernelInfo(i).KernelArgCount-1 do
+        writeln('  ',ocl.KernelInfo(i).KernelArgs[k].ArgName + ' : ' +ocl.KernelInfo(i).KernelArgs[k].ArgType);
+      writeln('');
+    end;
+  end;
 
 
 finalization
   DoneCriticalSection(semaphor);
-  //if assigned(ocl) then
-  //  ocl.free
+  if assigned(ocl) then
+    ocl.free
 
 end.
 

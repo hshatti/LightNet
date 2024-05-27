@@ -1241,8 +1241,13 @@ begin
   end;
 end;
 
-var hLib : {$if defined(MSWINDOWS) or defined(DARWIN) or defined(MACOS)}THandle {$else}Pointer{$endif};
+var hLib : {$if defined(MSWINDOWS)}THandle {$else}Pointer{$endif};
+    {$if defined(MSWINDOWS)}
+      getProc : function(h :THandle; name:LPCSTR):pointer;winapi;
 
+    {$else}
+      getProc : function(h :pointer; name:PAnsiChar):pointer;
+    {$endif}
 initialization
   {$if defined(MSWINDOWS)}
       hLib := LoadLibrary('OpenCL.dll');
@@ -1251,147 +1256,83 @@ initialization
   {$endif}
 
   {$if defined(MSWINDOWS)}
-  if hLib<>0 then
+     getProc := getProcAddress;
+  {$else}
+     getProc := dlsym;
+  {$endif}
+
+  {$if (not defined(MACOS)) and (not defined(DARWIN))}
+  if hLib<>{$ifdef MSWINDOWS}0{$else}nil{$endif} then
     begin
-      clGetPlatformIDs             := getProcAddress(hLib, 'clGetPlatformIDs');
-      clGetPlatformInfo            := getProcAddress(hLib, 'clGetPlatformInfo');
-      clGetDeviceIDs               := getProcAddress(hLib, 'clGetDeviceIDs');
-      clGetDeviceInfo              := getProcAddress(hLib, 'clGetDeviceInfo');
-      clCreateContext              := getProcAddress(hLib, 'clCreateContext');
-      clCreateContextFromType      := getProcAddress(hLib, 'clCreateContextFromType');
-      clRetainContext              := getProcAddress(hLib, 'clRetainContext');
-      clReleaseContext             := getProcAddress(hLib, 'clReleaseContext');
-      clGetContextInfo             := getProcAddress(hLib, 'clGetContextInfo');
-      clCreateCommandQueue         := getProcAddress(hLib, 'clCreateCommandQueue');
-      clRetainCommandQueue         := getProcAddress(hLib, 'clRetainCommandQueue');
-      clReleaseCommandQueue        := getProcAddress(hLib, 'clReleaseCommandQueue');
-      clGetCommandQueueInfo        := getProcAddress(hLib, 'clGetCommandQueueInfo');
-      clSetCommandQueueProperty    := getProcAddress(hLib, 'clSetCommandQueueProperty');
-      clCreateBuffer               := getProcAddress(hLib, 'clCreateBuffer');
-      clCreateImage2D              := getProcAddress(hLib, 'clCreateImage2D');
-      clCreateImage3D              := getProcAddress(hLib, 'clCreateImage3D');
-      clRetainMemObject            := getProcAddress(hLib, 'clRetainMemObject');
-      clReleaseMemObject           := getProcAddress(hLib, 'clReleaseMemObject');
-      clGetSupportedImageFormats   := getProcAddress(hLib, 'clGetSupportedImageFormats');
-      clGetMemObjectInfo           := getProcAddress(hLib, 'clGetMemObjectInfo');
-      clGetImageInfo               := getProcAddress(hLib, 'clGetImageInfo');
-      clCreateSampler              := getProcAddress(hLib, 'clCreateSampler');
-      clRetainSampler              := getProcAddress(hLib, 'clRetainSampler');
-      clReleaseSampler             := getProcAddress(hLib, 'clReleaseSampler');
-      clGetSamplerInfo             := getProcAddress(hLib, 'clGetSamplerInfo');
-      clCreateProgramWithSource    := getProcAddress(hLib, 'clCreateProgramWithSource');
-      clCreateProgramWithBinary    := getProcAddress(hLib, 'clCreateProgramWithBinary');
-      clRetainProgram              := getProcAddress(hLib, 'clRetainProgram');
-      clReleaseProgram             := getProcAddress(hLib, 'clReleaseProgram');
-      clBuildProgram               := getProcAddress(hLib, 'clBuildProgram');
-      clUnloadCompiler             := getProcAddress(hLib, 'clUnloadCompiler');
-      clGetProgramInfo             := getProcAddress(hLib, 'clGetProgramInfo');
-      clGetProgramBuildInfo        := getProcAddress(hLib, 'clGetProgramBuildInfo');
-      clCreateKernel               := getProcAddress(hLib, 'clCreateKernel');
-      clGetKernelArgInfo           := GetProcAddress(hLib, 'clGetKernelArgInfo');
-      clCreateKernelsInProgram     := getProcAddress(hLib, 'clCreateKernelsInProgram');
-      clRetainKernel               := getProcAddress(hLib, 'clRetainKernel');
-      clReleaseKernel              := getProcAddress(hLib, 'clReleaseKernel');
-      clSetKernelArg               := getProcAddress(hLib, 'clSetKernelArg');
-      clGetKernelInfo              := getProcAddress(hLib, 'clGetKernelInfo');
-      clGetKernelWorkGroupInfo     := getProcAddress(hLib, 'clGetKernelWorkGroupInfo');
-      clWaitForEvents              := getProcAddress(hLib, 'clWaitForEvents');
-      clGetEventInfo               := getProcAddress(hLib, 'clGetEventInfo');
-      clRetainEvent                := getProcAddress(hLib, 'clRetainEvent');
-      clReleaseEvent               := getProcAddress(hLib, 'clReleaseEvent');
-      clGetEventProfilingInfo      := getProcAddress(hLib, 'clGetEventProfilingInfo');
-      clFlush                      := getProcAddress(hLib, 'clFlush');
-      clFinish                     := getProcAddress(hLib, 'clFinish');
-      clEnqueueReadBuffer          := getProcAddress(hLib, 'clEnqueueReadBuffer');
-      clEnqueueWriteBuffer         := getProcAddress(hLib, 'clEnqueueWriteBuffer');
-      clEnqueueCopyBuffer          := getProcAddress(hLib, 'clEnqueueCopyBuffer');
-      clEnqueueReadImage           := getProcAddress(hLib, 'clEnqueueReadImage');
-      clEnqueueWriteImage          := getProcAddress(hLib, 'clEnqueueWriteImage');
-      clEnqueueCopyImage           := getProcAddress(hLib, 'clEnqueueCopyImage');
-      clEnqueueCopyImageToBuffer   := getProcAddress(hLib, 'clEnqueueCopyImageToBuffer');
-      clEnqueueCopyBufferToImage   := getProcAddress(hLib, 'clEnqueueCopyBufferToImage');
-      clEnqueueMapBuffer           := getProcAddress(hLib, 'clEnqueueMapBuffer');
-      clEnqueueMapImage            := getProcAddress(hLib, 'clEnqueueMapImage');
-      clEnqueueUnmapMemObject      := getProcAddress(hLib, 'clEnqueueUnmapMemObject');
-      clEnqueueNDRangeKernel       := getProcAddress(hLib, 'clEnqueueNDRangeKernel');
-      clEnqueueTask                := getProcAddress(hLib, 'clEnqueueTask');
-      clEnqueueNativeKernel        := getProcAddress(hLib, 'clEnqueueNativeKernel');
-      clEnqueueMarker              := getProcAddress(hLib, 'clEnqueueMarker');
-      clEnqueueWaitForEvents       := getProcAddress(hLib, 'clEnqueueWaitForEvents');
-      clEnqueueBarrier             := getProcAddress(hLib, 'clEnqueueBarrier');
+      clGetPlatformIDs             := getProc(hLib, 'clGetPlatformIDs');
+      clGetPlatformInfo            := getProc(hLib, 'clGetPlatformInfo');
+      clGetDeviceIDs               := getProc(hLib, 'clGetDeviceIDs');
+      clGetDeviceInfo              := getProc(hLib, 'clGetDeviceInfo');
+      clCreateContext              := getProc(hLib, 'clCreateContext');
+      clCreateContextFromType      := getProc(hLib, 'clCreateContextFromType');
+      clRetainContext              := getProc(hLib, 'clRetainContext');
+      clReleaseContext             := getProc(hLib, 'clReleaseContext');
+      clGetContextInfo             := getProc(hLib, 'clGetContextInfo');
+      clCreateCommandQueue         := getProc(hLib, 'clCreateCommandQueue');
+      clRetainCommandQueue         := getProc(hLib, 'clRetainCommandQueue');
+      clReleaseCommandQueue        := getProc(hLib, 'clReleaseCommandQueue');
+      clGetCommandQueueInfo        := getProc(hLib, 'clGetCommandQueueInfo');
+      clSetCommandQueueProperty    := getProc(hLib, 'clSetCommandQueueProperty');
+      clCreateBuffer               := getProc(hLib, 'clCreateBuffer');
+      clCreateImage2D              := getProc(hLib, 'clCreateImage2D');
+      clCreateImage3D              := getProc(hLib, 'clCreateImage3D');
+      clRetainMemObject            := getProc(hLib, 'clRetainMemObject');
+      clReleaseMemObject           := getProc(hLib, 'clReleaseMemObject');
+      clGetSupportedImageFormats   := getProc(hLib, 'clGetSupportedImageFormats');
+      clGetMemObjectInfo           := getProc(hLib, 'clGetMemObjectInfo');
+      clGetImageInfo               := getProc(hLib, 'clGetImageInfo');
+      clCreateSampler              := getProc(hLib, 'clCreateSampler');
+      clRetainSampler              := getProc(hLib, 'clRetainSampler');
+      clReleaseSampler             := getProc(hLib, 'clReleaseSampler');
+      clGetSamplerInfo             := getProc(hLib, 'clGetSamplerInfo');
+      clCreateProgramWithSource    := getProc(hLib, 'clCreateProgramWithSource');
+      clCreateProgramWithBinary    := getProc(hLib, 'clCreateProgramWithBinary');
+      clRetainProgram              := getProc(hLib, 'clRetainProgram');
+      clReleaseProgram             := getProc(hLib, 'clReleaseProgram');
+      clBuildProgram               := getProc(hLib, 'clBuildProgram');
+      clUnloadCompiler             := getProc(hLib, 'clUnloadCompiler');
+      clGetProgramInfo             := getProc(hLib, 'clGetProgramInfo');
+      clGetProgramBuildInfo        := getProc(hLib, 'clGetProgramBuildInfo');
+      clCreateKernel               := getProc(hLib, 'clCreateKernel');
+      clGetKernelArgInfo           := GetProc(hLib, 'clGetKernelArgInfo');
+      clCreateKernelsInProgram     := getProc(hLib, 'clCreateKernelsInProgram');
+      clRetainKernel               := getProc(hLib, 'clRetainKernel');
+      clReleaseKernel              := getProc(hLib, 'clReleaseKernel');
+      clSetKernelArg               := getProc(hLib, 'clSetKernelArg');
+      clGetKernelInfo              := getProc(hLib, 'clGetKernelInfo');
+      clGetKernelWorkGroupInfo     := getProc(hLib, 'clGetKernelWorkGroupInfo');
+      clWaitForEvents              := getProc(hLib, 'clWaitForEvents');
+      clGetEventInfo               := getProc(hLib, 'clGetEventInfo');
+      clRetainEvent                := getProc(hLib, 'clRetainEvent');
+      clReleaseEvent               := getProc(hLib, 'clReleaseEvent');
+      clGetEventProfilingInfo      := getProc(hLib, 'clGetEventProfilingInfo');
+      clFlush                      := getProc(hLib, 'clFlush');
+      clFinish                     := getProc(hLib, 'clFinish');
+      clEnqueueReadBuffer          := getProc(hLib, 'clEnqueueReadBuffer');
+      clEnqueueWriteBuffer         := getProc(hLib, 'clEnqueueWriteBuffer');
+      clEnqueueCopyBuffer          := getProc(hLib, 'clEnqueueCopyBuffer');
+      clEnqueueReadImage           := getProc(hLib, 'clEnqueueReadImage');
+      clEnqueueWriteImage          := getProc(hLib, 'clEnqueueWriteImage');
+      clEnqueueCopyImage           := getProc(hLib, 'clEnqueueCopyImage');
+      clEnqueueCopyImageToBuffer   := getProc(hLib, 'clEnqueueCopyImageToBuffer');
+      clEnqueueCopyBufferToImage   := getProc(hLib, 'clEnqueueCopyBufferToImage');
+      clEnqueueMapBuffer           := getProc(hLib, 'clEnqueueMapBuffer');
+      clEnqueueMapImage            := getProc(hLib, 'clEnqueueMapImage');
+      clEnqueueUnmapMemObject      := getProc(hLib, 'clEnqueueUnmapMemObject');
+      clEnqueueNDRangeKernel       := getProc(hLib, 'clEnqueueNDRangeKernel');
+      clEnqueueTask                := getProc(hLib, 'clEnqueueTask');
+      clEnqueueNativeKernel        := getProc(hLib, 'clEnqueueNativeKernel');
+      clEnqueueMarker              := getProc(hLib, 'clEnqueueMarker');
+      clEnqueueWaitForEvents       := getProc(hLib, 'clEnqueueWaitForEvents');
+      clEnqueueBarrier             := getProc(hLib, 'clEnqueueBarrier');
     end
     else raise Exception.Create('OpenCL Library not found!');
-  {$elseif not (DEFINED(DARWIN) or DEFINED(MACOS))}
-    if hLib<>nil then begin
-      clGetPlatformIDs             := dlsym(hLib, 'clGetPlatformIDs');
-      clGetPlatformInfo            := dlsym(hLib, 'clGetPlatformInfo');
-      clGetDeviceIDs               := dlsym(hLib, 'clGetDeviceIDs');
-      clGetDeviceInfo              := dlsym(hLib, 'clGetDeviceInfo');
-      clCreateContext              := dlsym(hLib, 'clCreateContext');
-      clCreateContextFromType      := dlsym(hLib, 'clCreateContextFromType');
-      clRetainContext              := dlsym(hLib, 'clRetainContext');
-      clReleaseContext             := dlsym(hLib, 'clReleaseContext');
-      clGetContextInfo             := dlsym(hLib, 'clGetContextInfo');
-      clCreateCommandQueue         := dlsym(hLib, 'clCreateCommandQueue');
-      clRetainCommandQueue         := dlsym(hLib, 'clRetainCommandQueue');
-      clReleaseCommandQueue        := dlsym(hLib, 'clReleaseCommandQueue');
-      clGetCommandQueueInfo        := dlsym(hLib, 'clGetCommandQueueInfo');
-      clSetCommandQueueProperty    := dlsym(hLib, 'clSetCommandQueueProperty');
-      clCreateBuffer               := dlsym(hLib, 'clCreateBuffer');
-      clCreateImage2D              := dlsym(hLib, 'clCreateImage2D');
-      clCreateImage3D              := dlsym(hLib, 'clCreateImage3D');
-      clRetainMemObject            := dlsym(hLib, 'clRetainMemObject');
-      clReleaseMemObject           := dlsym(hLib, 'clReleaseMemObject');
-      clGetSupportedImageFormats   := dlsym(hLib, 'clGetSupportedImageFormats');
-      clGetMemObjectInfo           := dlsym(hLib, 'clGetMemObjectInfo');
-      clGetImageInfo               := dlsym(hLib, 'clGetImageInfo');
-      clCreateSampler              := dlsym(hLib, 'clCreateSampler');
-      clRetainSampler              := dlsym(hLib, 'clRetainSampler');
-      clReleaseSampler             := dlsym(hLib, 'clReleaseSampler');
-      clGetSamplerInfo             := dlsym(hLib, 'clGetSamplerInfo');
-      clCreateProgramWithSource    := dlsym(hLib, 'clCreateProgramWithSource');
-      clCreateProgramWithBinary    := dlsym(hLib, 'clCreateProgramWithBinary');
-      clRetainProgram              := dlsym(hLib, 'clRetainProgram');
-      clReleaseProgram             := dlsym(hLib, 'clReleaseProgram');
-      clBuildProgram               := dlsym(hLib, 'clBuildProgram');
-      clUnloadCompiler             := dlsym(hLib, 'clUnloadCompiler');
-      clGetProgramInfo             := dlsym(hLib, 'clGetProgramInfo');
-      clGetProgramBuildInfo        := dlsym(hLib, 'clGetProgramBuildInfo');
-      clCreateKernel               := dlsym(hLib, 'clCreateKernel');
-      clGetKernelArgInfo           := dlsym(hLib, 'clGetKernelArgInfo');
-      clCreateKernelsInProgram     := dlsym(hLib, 'clCreateKernelsInProgram');
-      clRetainKernel               := dlsym(hLib, 'clRetainKernel');
-      clReleaseKernel              := dlsym(hLib, 'clReleaseKernel');
-      clSetKernelArg               := dlsym(hLib, 'clSetKernelArg');
-      clGetKernelInfo              := dlsym(hLib, 'clGetKernelInfo');
-      clGetKernelWorkGroupInfo     := dlsym(hLib, 'clGetKernelWorkGroupInfo');
-      clWaitForEvents              := dlsym(hLib, 'clWaitForEvents');
-      clGetEventInfo               := dlsym(hLib, 'clGetEventInfo');
-      clRetainEvent                := dlsym(hLib, 'clRetainEvent');
-      clReleaseEvent               := dlsym(hLib, 'clReleaseEvent');
-      clGetEventProfilingInfo      := dlsym(hLib, 'clGetEventProfilingInfo');
-      clFlush                      := dlsym(hLib, 'clFlush');
-      clFinish                     := dlsym(hLib, 'clFinish');
-      clEnqueueReadBuffer          := dlsym(hLib, 'clEnqueueReadBuffer');
-      clEnqueueWriteBuffer         := dlsym(hLib, 'clEnqueueWriteBuffer');
-      clEnqueueCopyBuffer          := dlsym(hLib, 'clEnqueueCopyBuffer');
-      clEnqueueReadImage           := dlsym(hLib, 'clEnqueueReadImage');
-      clEnqueueWriteImage          := dlsym(hLib, 'clEnqueueWriteImage');
-      clEnqueueCopyImage           := dlsym(hLib, 'clEnqueueCopyImage');
-      clEnqueueCopyImageToBuffer   := dlsym(hLib, 'clEnqueueCopyImageToBuffer');
-      clEnqueueCopyBufferToImage   := dlsym(hLib, 'clEnqueueCopyBufferToImage');
-      clEnqueueMapBuffer           := dlsym(hLib, 'clEnqueueMapBuffer');
-      clEnqueueMapImage            := dlsym(hLib, 'clEnqueueMapImage');
-      clEnqueueUnmapMemObject      := dlsym(hLib, 'clEnqueueUnmapMemObject');
-      clEnqueueNDRangeKernel       := dlsym(hLib, 'clEnqueueNDRangeKernel');
-      clEnqueueTask                := dlsym(hLib, 'clEnqueueTask');
-      clEnqueueNativeKernel        := dlsym(hLib, 'clEnqueueNativeKernel');
-      clEnqueueMarker              := dlsym(hLib, 'clEnqueueMarker');
-      clEnqueueWaitForEvents       := dlsym(hLib, 'clEnqueueWaitForEvents');
-      clEnqueueBarrier             := dlsym(hLib, 'clEnqueueBarrier');
-    end
-    else raise Exception.Create('OpenCL Library not found!');
-{$endif}
+   {$endif}
 
 finalization
     {$if defined(MSWINDOWS)}

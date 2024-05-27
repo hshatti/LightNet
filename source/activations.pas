@@ -448,6 +448,118 @@ end;
 {$endif}
 
 
+procedure MiSH_array(const dst, x, src:PSingle; const N:PtrInt);
+const MISH_THRESHOLD :single =20;
+{$if defined(__CPUX64) and defined(FPUAVX2)}
+const
+  l2e :single = 1.442695041;// log2(e);
+  c0  :single = 1.00172476;
+  c1  :single = 0.657636276;
+  c2  :single = 0.3371894346;
+  //MAX_EXP =  8.8722839052068352E+001;
+  //MIN_EXP = -8.7336544750553102E+001;
+
+  MAX_EXP =  8.87E+001;
+  MIN_EXP = -8.73E+001;
+
+  one :array[0..7] of single = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+  zero:array[0..7] of single = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  mx  :array[0..7] of single = (MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP, MAX_EXP);
+  mn  :array[0..7] of single = (MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP, MIN_EXP );
+asm
+  sub                  rsp      , 16*2                     // making stack space to save one xmm size register
+  vmovdqu              [rsp+$00], xmm6
+  vmovdqu              [rsp+$10], xmm7
+
+  vpbroadcastd  ymm3  , [rip + l2e]
+  vpbroadcastd  ymm4  , [rip + c1]
+  vpbroadcastd  ymm5  , [rip + c0]
+
+  mov           r11   , N
+  shr           r11   , 3
+  jz            @rem
+
+@while:
+  vxorps        ymm0  , ymm0        , ymm0              // zero
+  vsubps        ymm1  , ymm0        , [src]             // -src
+  vcmpgeps      ymm6  , ymm1        , [rip + mx]
+  vcmpleps      ymm7  , ymm1        , [rip + mn]
+  vblendvps     ymm1  , ymm1 , [rip + mx], ymm6
+  vblendvps     ymm1  , ymm1 , [rip + mn], ymm7
+  vmulps        ymm1  , ymm3        , ymm1
+  vroundps      ymm2  , ymm1        , 1
+  vsubps        ymm1  , ymm1        , ymm2
+  vcvtps2dq     ymm0  , ymm2
+  vpbroadcastd  ymm2  , [rip + c2]
+  vfmadd213ps   ymm2  , ymm1        , ymm4
+  vpslld        ymm0  , ymm0        , 23
+  vfmadd213ps   ymm1  , ymm2        , ymm5
+  vpaddd        ymm0  , ymm0        , ymm1
+  vaddps        ymm1  , ymm0        , [rip + one]       // 1 +exp(-src)
+  vrcpps        ymm1  , ymm1                            // 1/(1+exp(-src))
+  //vpcmpeqd      ymm0  , ymm0        , ymm0              // set ymm0 to to 0xffffffff
+  //vpandn        ymm6  , ymm6        , ymm0              // ymm6 := not ymm6
+  //vpandn        ymm7  , ymm7        , ymm0              // ymm6 := not ymm6
+  //vblendvps     ymm1  , ymm1  , [rip+one] , ymm6
+  //vblendvps     ymm1  , ymm1  , [rip+zero] , ymm7
+  vmovups       [dst] , ymm1
+  add           src   , 32
+  add           dst   , 32
+  dec           r11
+  jnz           @while
+
+  and           N   , 7
+  jz            @done
+@rem:
+
+  vpxor         xmm0  , xmm0        , xmm0
+  vsubss        xmm1  , xmm0        , dword [src]              //-src
+  vcmpgeps      xmm6  , xmm1        , [rip + mx]
+  vcmpleps      xmm7  , xmm1        , [rip + mn]
+  vblendvps     xmm1  , xmm1 , [rip + mx], xmm6
+  vblendvps     xmm1  , xmm1 , [rip + mn], xmm7
+  vmulss        xmm1  , xmm3        , xmm1
+  roundss       xmm2  , xmm1        , 1
+  vsubss        xmm1  , xmm1        , xmm2
+  vcvtps2dq     xmm0  , xmm2
+  vmovss        xmm2  , [rip + c2]
+  vfmadd213ss   xmm2  , xmm1        , xmm4
+  vpslld        xmm0  , xmm0        , 23
+  vfmadd213ss   xmm1  , xmm2        , xmm5
+  vpaddd        xmm0  , xmm0        , xmm1
+  vaddss        xmm1  , xmm0        , [rip + one]       // 1 +exp(-src)
+  vrcpss        xmm1  , xmm1        , xmm1              // 1/(1+exp(-src))
+  //vpcmpeqd      xmm0  , xmm0        , xmm0              // set ymm0 to to 0xffffffff
+  //vpandn        xmm6  , xmm6        , xmm0              // ymm6 := not ymm6
+  //vpandn        xmm7  , xmm7        , xmm0              // ymm6 := not ymm6
+  //vblendvps     xmm1  , xmm1  , [rip+one] , xmm6
+  //vblendvps     xmm1  , xmm1  , [rip+zero]  , xmm7
+  vmovss        dword [dst] , xmm1
+  add           src   , 4
+  add           dst   , 4
+  dec           N
+  jnz           @rem
+@done:
+  vmovdqu              xmm6     , [rsp+$00]
+  vmovdqu              xmm7     , [rsp+$10]
+  add                  rsp      , 16*2                     // restoring stack
+end;
+{$else}
+var
+  i     : longint;
+  x_val : single ;
+begin
+  for i:=0 to N-1 do begin
+    x_val  := src[i];
+    x[i]   := x_val;
+    dst[i] := x_val * tanh_activate(softplus_activate(x_val,MISH_THRESHOLD))
+  end;
+
+end;
+
+{$endif}
+
+
 function tanh_activate(const x:single):single;inline;
 begin
   result := 2 / (1 + exp(-2 * x)) - 1
@@ -460,8 +572,8 @@ begin
       exit(x)                // too large
     else if x < -threshold then
       exit(exp(x));    // too small
-    exit(ln(exp(x) + 1));
-    //exit(LnXP1(x));
+//    exit(ln(exp(x) + 1));
+    exit(LnXP1(exp(x)));
 end;
 
 function plse_activate(const x:single):single;inline;
