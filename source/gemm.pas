@@ -24,7 +24,7 @@ uses classes, sysutils, col2im, lightnet
 {$endif}
 {$if defined(OPENBLAS)}
   , openblas
-{$elseif defined(MKL)}
+{$elseif defined(MKL)}                                             (
   , mkl_cblas
 {$else}
   {$define GEMM}
@@ -808,6 +808,7 @@ asm
 @rem:
 
    mov              r8      ,    N
+   and              r8      ,    regs -1
    vmovd            xmm3    ,    r8d
    vpxor            ymm1    ,    ymm1    , ymm1
    vpxor            ymm2    ,    ymm2    , ymm2
@@ -870,7 +871,7 @@ begin
                 //sum := 0;
                 //for kk := 0 to K -1 do
                 //    sum := sum + ALPHA * A[i * lda+kk] * B[j * ldb+kk];
-                sum := ALPHA * dot1(@A[i * lda], @B[j * ldb], N);
+                sum := ALPHA * dot1(@A[i * lda], @B[j * ldb], K);
                 C[i * ldc+j] := C[i * ldc+j] + sum
             end
 end;

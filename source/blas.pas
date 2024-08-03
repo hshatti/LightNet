@@ -24,6 +24,14 @@ uses
 const _EPSILON = 0.000001;
       TWO_PI =6.2831853071795864769252866;
 
+{$if not declared(TSingles)}
+  type TSingles=PSingle;
+{$endif}
+
+{$if not declared(TSingles2D)}
+  type TSingles2D=PPSingle;
+{$endif}
+
 function rand_scale(s: single):single;
 function int_index(const a: TArray<longint>; const val, n: longint): longint;
 function rand_int(min: longint; max: longint):longint;
@@ -130,7 +138,7 @@ procedure l1_cpu(const n:longint; const pred, truth, delta, error:PSingle);
 
 procedure logistic_x_ent_cpu(const n:longint; const pred, truth, delta, error:PSingle);
 
-procedure softmax_x_ent_cpu(const n:longint; pred:PSingle; truth:PSingle; delta:PSingle; error:PSingle);
+procedure softmax_x_ent_cpu(const n: longint; const pred, truth, delta, error: PSingle);
 
 procedure softmax(const input:PSingle; const n: longint; const temp: single; const stride: longint; const output:PSingle); overload;
 procedure softmax(const input:PSingle; const n: longint; const temp: single; const output:PSingle; const stride: longint); overload;
@@ -1493,8 +1501,7 @@ begin
       end;
 end;
 
-procedure smooth_l1_cpu(const n: longint; const pred, truth, delta,
-  error: PSingle);
+procedure smooth_l1_cpu(const n: longint; const pred, truth, delta, error: PSingle);
 var i:longint;
     diff,abs_val:single;
 begin
@@ -1544,8 +1551,7 @@ begin
   end
 end;
 
-procedure logistic_x_ent_cpu(const n: longint; const pred, truth, delta,
-  error: PSingle);
+procedure logistic_x_ent_cpu(const n: longint; const pred, truth, delta, error: PSingle);
 var i:longint;
     t,p:single;
 begin
@@ -1558,8 +1564,7 @@ begin
   end
 end;
 
-procedure softmax_x_ent_cpu(const n: longint; pred: PSingle; truth: PSingle;
-  delta: PSingle; error: PSingle);
+procedure softmax_x_ent_cpu(const n: longint; const pred, truth, delta, error: PSingle);
 var i:longint;
     t,p :single;
 begin

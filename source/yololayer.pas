@@ -81,7 +81,7 @@ begin
     result.out_h := result.h;
     result.out_c := result.c;
     result.classes := classes;
-//    result.cost := TSingles.Create(1);
+    result.cost := [0];//TSingles.Create(1);
     result.biases := TSingles.Create(total * 2);
     result.nbiases := total * 2;
     if assigned(mask) then
@@ -718,7 +718,7 @@ begin
     avg_anyobj := 0;
     count := 0;
     class_count := 0;
-    l.cost := 0;
+    l.cost[0] := 0;
     setLength(threads, l.batch);
     setLength(yolo_args, l.batch);
     for b := 0 to l.batch -1 do
@@ -843,7 +843,7 @@ begin
     if l.show_details = 0 then
         begin
             loss := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
-            l.cost := loss;
+            l.cost[0] := loss;
             loss := loss / l.batch;
             writeln(ErrOutput, format('v3 (%s loss, Normalizer: (iou: %.2f, obj: %.2f, cls: %.2f) Region %d Avg (IOU: %f), count: %d, total_loss = %f ', [(ifthen(l.iou_loss = ilMSE, 'mse', (ifthen(l.iou_loss = ilGIOU, 'giou', 'iou')))), l.iou_normalizer, l.obj_normalizer, l.cls_normalizer, state.index, tot_iou / count, count, loss]))
         end;

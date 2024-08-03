@@ -91,7 +91,7 @@ function load_cifar10_data(const filename: string):TData;
 procedure get_random_batch(const d: TData; const n: longint; const X, y: PSingle);
 procedure get_next_batch(const d: TData; const n, offset: longint; const X, y: PSingle);
 procedure smooth_data(const d: TData);
-function load_all_cifar10():TData;
+function load_all_cifar10(const path:string='data\cifar10'):TData;
 function load_go(const filename: string):TData;
 procedure randomize_data(const d: TData);
 procedure scale_data_rows(const d: TData; const s: single);
@@ -1873,7 +1873,7 @@ begin
             d.y.vals[i][j] := eps * scale+(1-eps) * d.y.vals[i][j]
 end;
 
-function load_all_cifar10():TData;
+function load_all_cifar10(const path:string):TData;
 var
     i, j, b, n: longint;
     X, y: TMatrix;
@@ -1888,9 +1888,9 @@ begin
     y := make_matrix(50000, 10);
     result.X := X;
     result.y := y;
-    for b := 0 to 5 -1 do
+    for b := 0 to 4 do
         begin
-            buff := format('data/cifar/cifar-10-batches-bin/data_batch_%result.bin', [b+1]);
+            buff := format(path+'/data_batch_%d.bin', [b+1]);
             if not FileExists(buff) then
                 raise EFileNotFoundException.Create(buff+ ': was not found!');
             AssignFile(fp,buff);

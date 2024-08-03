@@ -76,7 +76,7 @@ begin
     result.out_c := result.c;
     result.classes := classes;
     result.coords := coords;
-//    result.cost := TSingles.Create(1);
+    result.cost := [0];//TSingles.Create(1);
     result.biases := TSingles.Create(n * 2);
     result.bias_updates := TSingles.Create(n * 2);
     result.outputs := h * w * n * (classes+coords+1);
@@ -271,7 +271,7 @@ begin
     avg_anyobj := 0;
     count := 0;
     class_count := 0;
-    l.cost := 0;
+    l.cost[0] := 0;
     for b := 0 to l.batch -1 do  begin
             if assigned(l.softmax_tree) then begin
                 onlyclass_id := 0;
@@ -415,7 +415,7 @@ begin
     {$ifndef GPU}
     flatten(l.delta, l.w * l.h, size * l.n, l.batch, false);
     {$endif}
-    l.cost := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
+    l.cost[0] := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
 
     {$ifdef USE_TELEMETRY}
     if benchmark then metrics.forward.finish(l.&type);

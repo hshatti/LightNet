@@ -44,7 +44,7 @@ begin
     result.w := side;
     result.h := side;
     assert(side * side * ((1+result.coords) * result.n+result.classes) = inputs);
-//    result.cost := TSingles.Create(1);
+    result.cost := [0];//TSingles.Create(1);
     result.outputs := result.inputs;
     result.truths := result.side * result.side * (1+result.coords+result.classes);
     result.output := TSingles.Create(batch * result.outputs);
@@ -105,7 +105,7 @@ begin
             avg_obj := 0;
             avg_anyobj := 0;
             count := 0;
-            l.cost := 0;
+            l.cost[0] := 0;
             size := l.inputs * l.batch;
             FillDWord(l.delta[0], size, 0);
             for b := 0 to l.batch -1 do
@@ -120,7 +120,7 @@ begin
                                 begin
                                     p_index := index+locations * l.classes+i * l.n+j;
                                     l.delta[p_index] := l.noobject_scale * (-l.output[p_index]);
-                                    l.cost :=  l.cost + (l.noobject_scale * sqr(l.output[p_index]{, 2}));
+                                    l.cost[0] :=  l.cost[0] + (l.noobject_scale * sqr(l.output[p_index]{, 2}));
                                     avg_anyobj := avg_anyobj + l.output[p_index]
                                 end;
                             best_index := -1;
@@ -132,7 +132,7 @@ begin
                             for j := 0 to l.classes -1 do
                                 begin
                                     l.delta[class_index+j] := l.class_scale * (state.truth[truth_index+1+j]-l.output[class_index+j]);
-                                    l.cost := l.cost + (l.class_scale * sqr(state.truth[truth_index+1+j]-l.output[class_index+j]{, 2}));
+                                    l.cost[0] := l.cost[0] + (l.class_scale * sqr(state.truth[truth_index+1+j]-l.output[class_index+j]{, 2}));
                                     if state.truth[truth_index+1+j]<>0 then
                                         avg_cat := avg_cat + l.output[class_index+j];
                                     avg_allcat := avg_allcat + l.output[class_index+j]
@@ -187,8 +187,8 @@ begin
                                 end;
                             iou := box_iou(_out, truth);
                             p_index := index+locations * l.classes+i * l.n+best_index;
-                            l.cost :=  l.cost - (l.noobject_scale * sqr(l.output[p_index]{, 2}));
-                            l.cost :=  l.cost + (l.object_scale * sqr(1-l.output[p_index]{, 2}));
+                            l.cost[0] :=  l.cost[0] - (l.noobject_scale * sqr(l.output[p_index]{, 2}));
+                            l.cost[0] :=  l.cost[0] + (l.object_scale * sqr(1-l.output[p_index]{, 2}));
                             avg_obj := avg_obj + l.output[p_index];
                             l.delta[p_index] := l.object_scale * (1-l.output[p_index]);
                             if l.rescore then
@@ -202,7 +202,7 @@ begin
                                     l.delta[box_index+2] := l.coord_scale * (sqrt(state.truth[tbox_index+2])-l.output[box_index+2]);
                                     l.delta[box_index+3] := l.coord_scale * (sqrt(state.truth[tbox_index+3])-l.output[box_index+3])
                                 end;
-                            l.cost :=  l.cost + sqr(1-iou{, 2});
+                            l.cost[0] :=  l.cost[0] + sqr(1-iou{, 2});
                             avg_iou := avg_iou + iou;
                             inc(count)
                         end
@@ -235,7 +235,7 @@ begin
                         end;
                     costs.free
                 end;
-            l.cost := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
+            l.cost[0] := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
             writeln(format('Detection Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d', [avg_iou / count, avg_cat / count, avg_allcat / (count * l.classes), avg_obj / count, avg_anyobj / (l.batch * locations * l.n), count]))
         end;
     {$ifdef USE_TELEMETRY}

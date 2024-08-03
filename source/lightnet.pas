@@ -731,7 +731,7 @@ const
       // dropout layer : inputs * batch
       rand : TSingles;
 
-      cost : single;
+      cost : TArray<single>;
 
       // YOLO (batch n * h * w) & Softmax ( batch )
       labels : TArray<longint>;

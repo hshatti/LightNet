@@ -40,3 +40,5 @@ __*/
 # misc
 *.rar
 *.zip
+*.bin
+data/cifar10/
