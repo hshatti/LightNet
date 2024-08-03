@@ -11,7 +11,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
-  ComCtrls, math, TypInfo, StrUtils, lightnet, nnetwork, parser, cfg, data, imageData, uimgform,ConvolutionalLayer, box,
+  ComCtrls, math, TypInfo, StrUtils, lightnet, nnetwork, parser, cfg, data, imageData, cifar, uimgform,ConvolutionalLayer, box,
   steroids, OpenCLHelper
   {$ifdef USE_OPENCV}
   , opencv
@@ -25,6 +25,7 @@ type
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
+    Button4: TButton;
     CheckBox1: TCheckBox;
     Image1: TImage;
     Label1: TLabel;
@@ -43,6 +44,7 @@ type
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
     procedure CheckBox1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -229,7 +231,7 @@ begin
   end
   else
       button1.Caption:='Stop';
-  test_detector('cfg/coco.data','cfg/yolov7.cfg','yolov7.weights',filenames,thresh,hier_thresh,'',0);
+  test_detector('cfg/coco.data','cfg/yolov3.cfg','yolov3.weights',filenames,thresh,hier_thresh,'',0);
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
@@ -624,6 +626,12 @@ begin
   bmp.EndUpdate();
   writeln((clock()-t)/1000000:3:3,'MS');
   Image1.Picture.Graphic:=bmp;
+end;
+
+procedure TForm1.Button4Click(Sender: TObject);
+var args:TArray<string>;
+begin
+  run_cifar('train');
 end;
 
 var i,j,k:IntPtr;

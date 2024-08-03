@@ -57,7 +57,7 @@ begin
     result.out_h := result.h;
     result.out_c := result.c;
     result.classes := classes;
-//    result.cost := TSingles.Create(1);
+    result.cost := [0];//TSingles.Create(1);
     result.biases := TSingles.Create(total * 2);
     if assigned(mask) then
         result.mask := mask
@@ -450,7 +450,7 @@ begin
     avg_anyobj := 0;
     count := 0;
     class_count := 0;
-    l.cost := 0;
+    l.cost[0] := 0;
     for b := 0 to l.batch -1 do
         begin
             for j := 0 to l.h -1 do
@@ -683,7 +683,7 @@ begin
                     end;
     except_uc_loss := sqr(mag_array(@except_uncertainty_lost[0], l.outputs * l.batch){, 2});
     //free(except_uncertainty_lost);
-    l.cost := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
+    l.cost[0] := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
     loss := sqr(mag_array(l.delta, l.outputs * l.batch){, 2});
     uc_loss := loss-except_uc_loss;
     iou_loss := except_uc_loss-class_loss;

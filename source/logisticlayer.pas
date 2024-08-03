@@ -39,7 +39,7 @@ begin
     result.loss := TSingles.Create(inputs * batch);
     result.output := TSingles.Create(inputs * batch);
     result.delta := TSingles.Create(inputs * batch);
-//    result.cost := TSingles.Create(1);
+    result.cost := [0];//TSingles.Create(1);
     result.forward := forward_logistic_layer;
     result.backward := backward_logistic_layer;
 {$ifdef GPU}
@@ -62,7 +62,7 @@ begin
     if assigned(net.truth) then
         begin
             logistic_x_ent_cpu(l.batch * l.inputs, l.output, net.truth, l.delta, l.loss);
-            l.cost := sum_array(l.loss, l.batch * l.inputs)
+            l.cost[0] := sum_array(l.loss, l.batch * l.inputs)
         end;
     {$ifdef USE_TELEMETRY}
     if benchmark then metrics.forward.finish(l.&type);

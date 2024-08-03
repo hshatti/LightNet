@@ -428,9 +428,9 @@ begin
     sum := 0;
     count := 0;
     for i := 0 to net.n -1 do
-//        if assigned(net.layers[i].cost) then
+        if assigned(net.layers[i].cost) then
             begin
-                sum := sum + net.layers[i].cost;
+                sum := sum + net.layers[i].cost[0];
                 inc(count)
             end;
     exit(sum / count)
@@ -469,12 +469,16 @@ begin
                 state.input := prev.output;
                 state.delta := prev.delta
             end;
+
         l := @net.layers[i];
+
         if l.stopbackward then
             break;
         if l.onlyforward then
             continue;
+
         l.backward(l[0], @state);
+
         if assigned(net.onBackward) then
           net.onBackward(i, @net);
     end
@@ -959,7 +963,7 @@ end;
 
 function network_predict(const net: TNetwork; const input: TArray<Single>):PSingle; overload;
 begin
-  network_predict(net, PSingle(input))
+  exit(network_predict(net, PSingle(input)))
 end;
 
 function network_predict_ptr(const net: Pnetwork; const input: PSingle):PSingle;

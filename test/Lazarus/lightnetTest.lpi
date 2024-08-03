@@ -58,19 +58,15 @@
             </Options>
           </Linking>
           <Other>
-            <CustomOptions Value="-dUSE_MULTITHREADING
+            <CustomOptions Value="-CfAVX2
+-dUSE_MULTITHREADING
 -dUSE_TELEMETRY
--CfAVX2"/>
-            <OtherDefines Count="9">
-              <Define0 Value="OPENBLAS_USE64BITINT"/>
-              <Define1 Value="OPENBLAS"/>
-              <Define2 Value="MKL"/>
-              <Define3 Value="CLBLAST"/>
-              <Define4 Value="CLBLAS"/>
-              <Define5 Value="DEBUG"/>
-              <Define6 Value="USE_MULTITHREADING"/>
-              <Define7 Value="USE_TELEMETRY"/>
-              <Define8 Value="USE_OPENCV"/>
+-dOPENBLAS"/>
+            <OtherDefines Count="4">
+              <Define0 Value="USE_MULTITHREADING"/>
+              <Define1 Value="USE_TELEMETRY"/>
+              <Define2 Value="USE_OPENCV"/>
+              <Define3 Value="OPENBLAS"/>
             </OtherDefines>
           </Other>
         </CompilerOptions>
@@ -96,6 +92,10 @@
       </Unit>
       <Unit>
         <Filename Value="../../source/ntensors.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="../../source/cifar.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
     </Units>
@@ -138,18 +138,12 @@
     <Other>
       <CustomOptions Value="-CfAVX2
 -dUSE_MULTITHREADING
--dUSE_TELEMETRY
--dUSE_OPENCV"/>
-      <OtherDefines Count="9">
-        <Define0 Value="OPENBLAS_USE64BITINT"/>
-        <Define1 Value="OPENBLAS"/>
-        <Define2 Value="MKL"/>
-        <Define3 Value="CLBLAST"/>
-        <Define4 Value="CLBLAS"/>
-        <Define5 Value="DEBUG"/>
-        <Define6 Value="USE_MULTITHREADING"/>
-        <Define7 Value="USE_TELEMETRY"/>
-        <Define8 Value="USE_OPENCV"/>
+-dUSE_TELEMETRY"/>
+      <OtherDefines Count="4">
+        <Define0 Value="USE_MULTITHREADING"/>
+        <Define1 Value="USE_TELEMETRY"/>
+        <Define2 Value="USE_OPENCV"/>
+        <Define3 Value="OPENBLAS"/>
       </OtherDefines>
     </Other>
   </CompilerOptions>
